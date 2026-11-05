@@ -405,23 +405,45 @@ function initNavigation() {
   const backdrop = document.getElementById('mobileSidebarBackdrop');
   if (backdrop) backdrop.addEventListener('click', closeMobileSidebar);
 
-  // Botones rápidos de cabecera móvil
+  // Botones rápidos de cabecera móvil y selector POS móvil
   const btnMobAlert = document.getElementById('btnMobileAlertBell');
   if (btnMobAlert) btnMobAlert.addEventListener('click', openCriticalAlertsModal);
 
-  const scrollToPosCart = () => {
+  const toggleMobileTools = () => {
+    const topbar = document.getElementById('mainTopbar');
+    const stripBtn = document.getElementById('btnStripToggleTools');
+    if (!topbar) return;
+    const isExp = topbar.classList.toggle('mobile-expanded');
+    if (stripBtn) {
+      stripBtn.textContent = isExp ? '▲ Ocultar Herramientas' : '⚡ Tasas y Caja Rápida ▾';
+    }
+  };
+
+  const btnToggleTopbar = document.getElementById('btnToggleMobileTopbar');
+  if (btnToggleTopbar) btnToggleTopbar.addEventListener('click', toggleMobileTools);
+
+  const btnStripToggle = document.getElementById('btnStripToggleTools');
+  if (btnStripToggle) btnStripToggle.addEventListener('click', toggleMobileTools);
+
+  const btnMobPosCatalog = document.getElementById('btnMobPosCatalog');
+  if (btnMobPosCatalog) btnMobPosCatalog.addEventListener('click', () => setMobilePosView('catalog'));
+
+  const btnMobPosCart = document.getElementById('btnMobPosCart');
+  if (btnMobPosCart) btnMobPosCart.addEventListener('click', () => setMobilePosView('cart'));
+
+  const btnBackCatalog = document.getElementById('btnMobileBackToCatalog');
+  if (btnBackCatalog) btnBackCatalog.addEventListener('click', () => setMobilePosView('catalog'));
+
+  const goToMobileCart = () => {
     goToTab('pos');
-    setTimeout(() => {
-      const cartEl = document.getElementById('posCartPanel');
-      if (cartEl) cartEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    setMobilePosView('cart');
   };
 
   const btnMobCart = document.getElementById('btnMobileGoCart');
-  if (btnMobCart) btnMobCart.addEventListener('click', scrollToPosCart);
+  if (btnMobCart) btnMobCart.addEventListener('click', goToMobileCart);
 
   const btnMfc = document.getElementById('btnMfcScrollToCart');
-  if (btnMfc) btnMfc.addEventListener('click', scrollToPosCart);
+  if (btnMfc) btnMfc.addEventListener('click', goToMobileCart);
 
   const now = new Date();
   document.getElementById('currentDateDisplay').textContent = now.toLocaleDateString('es-CO', {
@@ -497,6 +519,29 @@ function renderBrandAndRates() {
 
   const bsPerUsd = rateBS > 0 ? (rateUSD / rateBS).toFixed(2) : '0.00';
   document.getElementById('impliedUsdBsDisplay').textContent = `1$ ≈ ${bsPerUsd} Bs`;
+
+  const mobStripTxt = document.getElementById('mobileRatesSummaryText');
+  if (mobStripTxt) {
+    mobStripTxt.textContent = `🇺🇸 1$ = ${fmtCOP(rateUSD)} | 🇻🇪 1$ ≈ ${bsPerUsd} Bs`;
+  }
+}
+
+function setMobilePosView(view) {
+  const posSec = document.getElementById('tab-pos');
+  const btnCat = document.getElementById('btnMobPosCatalog');
+  const btnCart = document.getElementById('btnMobPosCart');
+  if (!posSec) return;
+
+  if (view === 'cart') {
+    posSec.classList.add('mobile-pos-cart-view');
+    if (btnCat) btnCat.classList.remove('active');
+    if (btnCart) btnCart.classList.add('active');
+  } else {
+    posSec.classList.remove('mobile-pos-cart-view');
+    if (btnCat) btnCat.classList.add('active');
+    if (btnCart) btnCart.classList.remove('active');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function initTopbarEvents() {
@@ -567,7 +612,10 @@ function initTopbarEvents() {
   // Botón Modal App / APK
   let deferredInstallPrompt = null;
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker
+      .register('sw.js?v=5')
+      .then((reg) => reg.update())
+      .catch(() => {});
   }
 
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -1470,6 +1518,9 @@ function renderCart() {
   const mobCartBadge = document.getElementById('mobileCartBadge');
   if (mobCartBadge) mobCartBadge.textContent = totalItemsQty;
 
+  const mobPosSwitchCount = document.getElementById('mobPosSwitchCount');
+  if (mobPosSwitchCount) mobPosSwitchCount.textContent = totalItemsQty;
+
   const mfcBar = document.getElementById('mobileFloatingCartBar');
   if (mfcBar) {
     if (totalItemsQty > 0) {
@@ -1753,6 +1804,7 @@ function completeSale() {
   });
 
   renderAll();
+  setMobilePosView('catalog');
   showToast(`✅ Venta registrada por ${fmtCOP(totalCOP)} (${fmtUSD(totalUSD)})`);
   if (triggeredLowStockAlert) {
     playAlertBeep();

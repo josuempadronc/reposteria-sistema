@@ -32,7 +32,7 @@ function getLocalIpAddress() {
 
 // Estado de la conexión de WhatsApp
 let waSock = null;
-let waStatus = 'connecting'; // 'connecting' | 'qr' | 'connected' | 'disconnected'
+let waStatus = 'connecting';
 let waQrDataUrl = null;
 let waConnectedUser = null;
 
@@ -116,6 +116,7 @@ function parseJsonBody(req) {
 function sendJson(res, status, payload) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
@@ -135,7 +136,6 @@ const server = http.createServer(async (req, res) => {
 
   const safeUrl = req.url.split('?')[0];
 
-  // API: Información y QR para instalar App en Android / Móvil
   if (safeUrl === '/api/mobile-info' && req.method === 'GET') {
     const QRCode = require('qrcode');
     const ip = getLocalIpAddress();
@@ -144,7 +144,6 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ip, port: PORT, mobileUrl, qrDataUrl });
   }
 
-  // API: Consultar estado y QR de WhatsApp
   if (safeUrl === '/api/wa/status' && req.method === 'GET') {
     return sendJson(res, 200, {
       status: waStatus,
@@ -153,7 +152,6 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // API: Enviar mensaje automático de WhatsApp
   if (safeUrl === '/api/wa/send' && req.method === 'POST') {
     const { phone, message } = await parseJsonBody(req);
     if (waStatus !== 'connected' || !waSock) {
@@ -176,7 +174,6 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // API: Desvincular sesión y generar nuevo QR
   if (safeUrl === '/api/wa/logout' && req.method === 'POST') {
     try {
       if (waSock) {
@@ -193,7 +190,6 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
-  // Archivos estáticos del sistema
   const filePath = path.join(ROOT, safeUrl === '/' ? 'index.html' : safeUrl);
   const ext = path.extname(filePath).toLowerCase();
 
@@ -203,7 +199,10 @@ const server = http.createServer(async (req, res) => {
       res.end('Archivo no encontrado');
       return;
     }
-    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+    res.writeHead(200, {
+      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    });
     res.end(content);
   });
 });

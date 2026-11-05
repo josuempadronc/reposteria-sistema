@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Sistema POS, Pedidos, Inventario y Caja - Repostería</title>
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json?v=5" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=5" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -113,6 +113,9 @@
           <small id="mobileActiveTabTitle">Punto de Venta</small>
         </div>
         <div class="mobile-header-right">
+          <button type="button" class="mobile-icon-btn" id="btnToggleMobileTopbar" title="Tasas de Cambio y Acciones Rápidas">
+            💱
+          </button>
           <button type="button" class="mobile-icon-btn" id="btnMobileAlertBell" title="Alertas">
             🚨<span class="mobile-mini-badge" id="mobileAlertBadge">0</span>
           </button>
@@ -122,8 +125,14 @@
         </div>
       </header>
 
+      <!-- BARRA COMPACTA DE TASAS EN MÓVIL (TOCA PARA DESPLEGAR HERRAMIENTAS) -->
+      <div class="mobile-rates-strip no-print" id="mobileRatesStrip">
+        <span id="mobileRatesSummaryText">🇺🇸 1$ = $4,000 | 🇻🇪 1$ ≈ 57.14 Bs</span>
+        <button type="button" class="mobile-strip-btn" id="btnStripToggleTools">⚡ Tasas y Caja Rápida ▾</button>
+      </div>
+
       <!-- TOPBAR: TASAS DE CAMBIO Y ACCIONES RÁPIDAS -->
-      <header class="topbar no-print">
+      <header class="topbar no-print" id="mainTopbar">
         <div class="rates-bar">
           <div class="rate-pill">
             <span class="rate-label">🇺🇸 Tasa USD (COP por 1$):</span>
@@ -170,6 +179,16 @@
 
       <!-- ==================== TAB 1: PUNTO DE VENTA (POS) ==================== -->
       <section id="tab-pos" class="tab-section active">
+        <!-- Selector Móvil: Catálogo vs Cuenta/Cobrar -->
+        <div class="mobile-pos-switcher no-print" id="mobilePosSwitcher">
+          <button type="button" class="mpos-tab-btn active" id="btnMobPosCatalog" data-posview="catalog">
+            🍰 Catálogo de Productos
+          </button>
+          <button type="button" class="mpos-tab-btn" id="btnMobPosCart" data-posview="cart">
+            🧾 Orden / Cobrar (<span id="mobPosSwitchCount">0</span>)
+          </button>
+        </div>
+
         <div class="pos-grid">
           <!-- Catálogo de productos -->
           <div class="pos-catalog">
@@ -191,6 +210,9 @@
           <!-- Carrito / Caja Registradora -->
           <div class="pos-cart-panel" id="posCartPanel">
             <div class="cart-header">
+              <button type="button" class="btn btn-outline btn-sm mobile-back-catalog-btn" id="btnMobileBackToCatalog">
+                ⬅ Productos
+              </button>
               <h2>🧾 Orden Actual</h2>
               <button class="btn-text danger" id="btnClearCart">Vaciar</button>
             </div>
@@ -1528,15 +1550,21 @@
       </div>
       <div style="text-align:center;">
         <p class="helper-text">
-          Conecta tu teléfono Android al <strong>mismo Wi-Fi</strong> de esta PC y escanea este Código QR con la cámara para abrir e instalar la aplicación a pantalla completa:
+          Escanea este Código QR con la cámara de tu teléfono Android (con Wi-Fi o datos móviles) o pulsa el botón de abajo para descargar el instalador <strong>DulceReposteria_POS.apk</strong> directamente:
         </p>
 
         <div id="apkQrContainer" style="margin: 14px auto; width: 220px; height: 220px; border: 2px dashed var(--border); border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #fff;">
           <span style="color:var(--text-muted);font-size:13px;">Generando QR...</span>
         </div>
 
-        <div style="margin-bottom: 12px;">
-          <strong id="apkMobileUrlText" style="color:var(--primary);font-size:15px;">http://127.0.0.1:8080</strong>
+        <div style="margin-bottom: 14px; display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <a href="/DulceReposteria_POS.apk" download="DulceReposteria_POS.apk" class="btn btn-success" style="text-decoration:none; width:100%; max-width:340px; justify-content:center;">
+            ⬇️ Descargar APK desde esta PC (4.2 MB)
+          </a>
+          <a href="https://github.com/josuempadronc/reposteria-sistema/releases/download/v1.0.0/DulceReposteria_POS.apk" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none; width:100%; max-width:340px; justify-content:center;">
+            ☁️ Descarga Directa en Nube (GitHub Release)
+          </a>
+          <small style="color:var(--text-muted);">IP Local del Servidor: <strong id="apkMobileUrlText" style="color:var(--primary);">http://127.0.0.1:8080</strong></small>
         </div>
 
         <button type="button" class="btn btn-primary hidden" id="btnPwaInstallPrompt" style="margin-bottom:12px;">
@@ -1685,6 +1713,6 @@
 
   <div id="toastContainer" class="toast-container no-print"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
