@@ -1,0 +1,19 @@
+{
+  "name": "Dulce Repostería - POS, Inventario y Caja",
+  "short_name": "Repostería POS",
+  "description": "Sistema de Punto de Venta, Inventario, Pedidos y Corte de Caja para Repostería",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdfaf7",
+  "theme_color": "#c84b6b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

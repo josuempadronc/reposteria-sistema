@@ -1,0 +1,7 @@
+node_modules/
+wa_auth_info/
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
+.DS_Store

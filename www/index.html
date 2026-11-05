@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#c84b6b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Sistema POS, Pedidos, Inventario y Caja - Repostería</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- FONDO OSCURO PARA CAJÓN DE MENÚ MÓVIL -->
+    <div class="mobile-sidebar-backdrop hidden no-print" id="mobileSidebarBackdrop"></div>
+
+    <!-- SIDEBAR / CAJÓN DESLIZANTE EN MÓVIL -->
+    <aside class="sidebar no-print" id="appSidebar">
+      <div class="brand-header">
+        <div class="brand-logo" id="brandEmoji">🧁</div>
+        <div class="brand-info">
+          <h1 id="brandNameDisplay">Dulce Repostería</h1>
+          <span class="brand-subtitle" id="brandSloganDisplay">POS, Inventario y Caja</span>
+        </div>
+        <button type="button" class="mobile-drawer-close" id="btnCloseMobileSidebar" aria-label="Cerrar menú">✕</button>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="pos">
+          <span class="nav-icon">🛒</span>
+          <span>Punto de Venta (Caja)</span>
+        </button>
+        <button class="nav-item" data-tab="pedidos">
+          <span class="nav-icon">🎂</span>
+          <span>Pedidos y Encargos</span>
+          <span class="nav-badge warning hidden" id="badgePedidos">0</span>
+        </button>
+        <button class="nav-item" data-tab="clientes">
+          <span class="nav-icon">👥</span>
+          <span>Clientes</span>
+        </button>
+        <button class="nav-item" data-tab="inventario">
+          <span class="nav-icon">🍰</span>
+          <span>Productos Terminados</span>
+          <span class="nav-badge hidden" id="badgeProductos">0</span>
+        </button>
+        <button class="nav-item" data-tab="insumos">
+          <span class="nav-icon">🌾</span>
+          <span>Materia Prima / Insumos</span>
+          <span class="nav-badge hidden" id="badgeInsumos">0</span>
+        </button>
+        <button class="nav-item" data-tab="mermas">
+          <span class="nav-icon">⚠️</span>
+          <span>Caducidad y Mermas</span>
+          <span class="nav-badge warning hidden" id="badgeMermas">0</span>
+        </button>
+        <button class="nav-item" data-tab="movimientos">
+          <span class="nav-icon">💸</span>
+          <span>Gastos y Movimientos</span>
+        </button>
+        <button class="nav-item" data-tab="corte">
+          <span class="nav-icon">📊</span>
+          <span>Entrega de Cuentas (Corte)</span>
+        </button>
+        <button class="nav-item" data-tab="usuarios" id="navItemUsuarios">
+          <span class="nav-icon">🔐</span>
+          <span>Control de Usuarios</span>
+        </button>
+        <button class="nav-item" data-tab="config" id="navItemConfig">
+          <span class="nav-icon">⚙️</span>
+          <span>Personalizar y Tasas</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-session-card" id="sidebarUserCard">
+          <div class="user-session-top">
+            <span class="user-avatar" id="activeUserAvatar">👑</span>
+            <div class="user-session-info">
+              <strong id="activeUserNameDisplay">Administrador</strong>
+              <span class="user-role-pill" id="activeUserRoleDisplay">Admin Total</span>
+            </div>
+          </div>
+          <button type="button" class="btn-switch-user" id="btnLockOrSwitchUser">
+            🔒 Cambiar Usuario / Bloquear
+          </button>
+        </div>
+        <div class="cash-status-card" id="sidebarCashStatus" style="margin-top:8px;">
+          <div class="status-row">
+            <span class="status-dot open" id="cashStatusDot"></span>
+            <strong id="cashStatusText">Turno Activo</strong>
+          </div>
+          <small id="currentDateDisplay"></small>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-area">
+      <!-- BARRA SUPERIOR EXCLUSIVA PARA MÓVIL (MENÚ HAMBURGUESA + ACCESOS RÁPIDOS) -->
+      <header class="mobile-app-bar no-print">
+        <button type="button" class="mobile-hamburger-btn" id="btnOpenMobileSidebar" aria-label="Abrir menú">
+          ☰
+        </button>
+        <div class="mobile-brand-center">
+          <strong id="mobileBrandNameDisplay">Dulce Repostería</strong>
+          <small id="mobileActiveTabTitle">Punto de Venta</small>
+        </div>
+        <div class="mobile-header-right">
+          <button type="button" class="mobile-icon-btn" id="btnMobileAlertBell" title="Alertas">
+            🚨<span class="mobile-mini-badge" id="mobileAlertBadge">0</span>
+          </button>
+          <button type="button" class="mobile-icon-btn" id="btnMobileGoCart" title="Ir al Carrito / Cobrar">
+            🧾<span class="mobile-mini-badge primary" id="mobileCartBadge">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- TOPBAR: TASAS DE CAMBIO Y ACCIONES RÁPIDAS -->
+      <header class="topbar no-print">
+        <div class="rates-bar">
+          <div class="rate-pill">
+            <span class="rate-label">🇺🇸 Tasa USD (COP por 1$):</span>
+            <input type="number" id="quickRateUSD" step="any" min="1" title="Cuántos Pesos equivalen a 1 Dólar" />
+            <span class="rate-unit">COP</span>
+          </div>
+          <div class="rate-pill">
+            <span class="rate-label">🇻🇪 Tasa Bs (COP por 1 Bs):</span>
+            <input type="number" id="quickRateBS" step="any" min="0.01" title="Cuántos Pesos equivalen a 1 Bolívar" />
+            <span class="rate-unit">COP</span>
+          </div>
+          <div class="rate-pill secondary" id="impliedUsdBsDisplay" title="Relación implícita Bs por 1 USD">
+            1$ ≈ 0.00 Bs
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn btn-alert-bell btn-sm" id="btnOpenCriticalAlerts" title="Ver centro de alertas urgentes de inventario y pedidos">
+            🚨 Alertas <span class="alert-bell-count" id="topbarAlertCount">0</span>
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnOpenApkModal" title="Instalar en celular Android o generar APK">
+            📲 App / APK
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnOpenWaModal" title="Vincular WhatsApp por QR para envíos 100% automáticos">
+            <span id="waTopbarDot">⚪</span> <span id="waTopbarText">WhatsApp Auto</span>
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnOpenConverter" title="Calculadora rápida de monedas">
+            💱 Calculadora
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnQuickIncome" title="Registrar entrada de sencillo o ingreso manual a caja">
+            ➕ Ingreso Extra
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnQuickExpense" title="Registrar salida o gasto de caja">
+            ➖ Registrar Gasto
+          </button>
+          <button class="btn btn-primary btn-sm" id="btnOpenBaseModal" title="Configurar el fondo inicial de caja del día">
+            🏦 Fondo Inicial
+          </button>
+        </div>
+      </header>
+
+      <!-- ALERTAS GLOBALES -->
+      <div id="globalAlertsBar" class="alerts-banner hidden no-print"></div>
+
+      <!-- ==================== TAB 1: PUNTO DE VENTA (POS) ==================== -->
+      <section id="tab-pos" class="tab-section active">
+        <div class="pos-grid">
+          <!-- Catálogo de productos -->
+          <div class="pos-catalog">
+            <div class="catalog-toolbar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="posSearchInput" placeholder="Buscar pastel, postre, bebida, galleta..." />
+              </div>
+              <div class="category-Chips" id="posCategoryList">
+                <!-- Categorías dinámicas -->
+              </div>
+            </div>
+
+            <div class="products-grid" id="posProductsGrid">
+              <!-- Tarjetas de productos con imagen o emoji -->
+            </div>
+          </div>
+
+          <!-- Carrito / Caja Registradora -->
+          <div class="pos-cart-panel" id="posCartPanel">
+            <div class="cart-header">
+              <h2>🧾 Orden Actual</h2>
+              <button class="btn-text danger" id="btnClearCart">Vaciar</button>
+            </div>
+
+            <!-- Selección de Cliente en POS -->
+            <div class="pos-customer-bar">
+              <select id="posCustomerSelect">
+                <option value="">👤 Cliente Mostrador (General)</option>
+              </select>
+              <button type="button" class="btn btn-outline btn-sm" id="btnQuickNewCustomer" title="Agregar nuevo cliente">➕</button>
+            </div>
+
+            <div class="cart-items" id="cartItemsContainer">
+              <!-- Items del carrito -->
+            </div>
+
+            <div class="cart-summary">
+              <div class="discount-row">
+                <label for="cartDiscountCOP">Descuento (COP):</label>
+                <input type="number" id="cartDiscountCOP" min="0" step="100" value="0" />
+              </div>
+
+              <div class="totals-card">
+                <div class="total-main">
+                  <span>TOTAL (Pesos)</span>
+                  <strong id="cartTotalCOP">$ 0</strong>
+                </div>
+                <div class="total-conversions">
+                  <div class="conv-item">
+                    <span>🇺🇸 En Dólares:</span>
+                    <strong id="cartTotalUSD">$ 0.00 USD</strong>
+                  </div>
+                  <div class="conv-item">
+                    <span>🇻🇪 En Bolívares:</span>
+                    <strong id="cartTotalBS">0.00 Bs</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección de Cobro -->
+              <div class="payment-section">
+                <label class="section-label">Método de Pago</label>
+                <div class="payment-methods-grid" id="paymentMethodButtons">
+                  <button type="button" class="pay-method-btn active" data-method="efectivo">💵 Efectivo</button>
+                  <button type="button" class="pay-method-btn" data-method="transferencia">📲 Transferencia / QR</button>
+                  <button type="button" class="pay-method-btn" data-method="tarjeta">💳 Tarjeta / Punto</button>
+                  <button type="button" class="pay-method-btn" data-method="mixto">🔄 Pago Mixto</button>
+                </div>
+
+                <!-- Pago simple -->
+                <div id="singlePaymentBox" class="payment-calc-box">
+                  <div class="form-row-inline">
+                    <div class="form-group">
+                      <label>Moneda recibida</label>
+                      <select id="payCurrencySelect">
+                        <option value="COP">🇨🇴 Pesos (COP)</option>
+                        <option value="USD">🇺🇸 Dólares (USD)</option>
+                        <option value="BS">🇻🇪 Bolívares (Bs)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Monto Recibido</label>
+                      <input type="number" id="payAmountReceived" step="any" min="0" placeholder="Monto exacto" />
+                    </div>
+                  </div>
+                  <div class="quick-cash-buttons" id="quickCashBtns">
+                    <button type="button" class="chip-btn" data-exact="true">Exacto</button>
+                    <button type="button" class="chip-btn" data-val="10000">10k</button>
+                    <button type="button" class="chip-btn" data-val="20000">20k</button>
+                    <button type="button" class="chip-btn" data-val="50000">50k</button>
+                    <button type="button" class="chip-btn" data-val="100000">100k</button>
+                  </div>
+                </div>
+
+                <!-- Pago Mixto -->
+                <div id="mixedPaymentBox" class="payment-calc-box hidden">
+                  <p class="helper-text">Ingresa cuánto recibes en cada modalidad:</p>
+                  <div class="mixed-grid">
+                    <div class="form-group">
+                      <label>Efectivo COP</label>
+                      <input type="number" id="mixCashCOP" step="100" min="0" value="0" />
+                    </div>
+                    <div class="form-group">
+                      <label>Efectivo USD ($)</label>
+                      <input type="number" id="mixCashUSD" step="0.5" min="0" value="0" />
+                    </div>
+                    <div class="form-group">
+                      <label>Efectivo Bs</label>
+                      <input type="number" id="mixCashBS" step="1" min="0" value="0" />
+                    </div>
+                    <div class="form-group">
+                      <label>Transferencia / Tarjeta (COP)</label>
+                      <input type="number" id="mixDigitalCOP" step="100" min="0" value="0" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cálculo de Vuelto / Cambio y Moneda en que sale el vuelto -->
+                <div class="change-box" id="changeBox">
+                  <div class="change-header">
+                    <span id="changeLabel">Vuelto / Cambio a entregar:</span>
+                    <strong id="changeCOP">$ 0 COP</strong>
+                  </div>
+                  <div class="change-equivalents" id="changeEquivalents">
+                    <span>Equivale a: <b id="changeUSD">$ 0.00 USD</b> ó <b id="changeBS">0.00 Bs</b></span>
+                  </div>
+                  <div class="change-currency-selector" id="changeCurrencySelectorRow">
+                    <label>¿De qué gaveta entregas el vuelto?</label>
+                    <select id="changeGivenCurrency">
+                      <option value="COP">🇨🇴 Sale de Efectivo Pesos (COP)</option>
+                      <option value="USD">🇺🇸 Sale de Efectivo Dólares (USD)</option>
+                      <option value="BS">🇻🇪 Sale de Efectivo Bolívares (Bs)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-top:8px;">
+                  <input type="text" id="saleCustomerNote" placeholder="Nota adicional (ej. Mesa 3, Para llevar, Empaque regalo)" />
+                </div>
+
+                <button class="btn btn-success btn-block btn-lg" id="btnCompleteSale">
+                  ✅ Cobrar y Registrar Venta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARRA FLOTANTE DE CUENTA EN MÓVIL -->
+        <div class="mobile-floating-cart hidden no-print" id="mobileFloatingCartBar">
+          <div class="mfc-info">
+            <strong id="mfcCountText">0 productos</strong>
+            <span id="mfcTotalText">$ 0 COP</span>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btnMfcScrollToCart">
+            🧾 Ver Cuenta / Cobrar ➔
+          </button>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 2: PEDIDOS Y ENCARGOS ==================== -->
+      <section id="tab-pedidos" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>🎂 Gestión de Pedidos y Encargos Personalizados</h2>
+            <p class="subtitle">Controla encargos de tortas, fechas de entrega, abonos recibidos y saldos por cobrar</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="btnNewOrder">➕ Nuevo Pedido / Encargo</button>
+          </div>
+        </div>
+
+        <div class="kpi-grid" style="margin-bottom: 18px;">
+          <div class="kpi-card highlight">
+            <span class="kpi-title">📅 Pedidos Activos / Por Entregar</span>
+            <strong class="kpi-value" id="ordKpiActive">0</strong>
+            <div class="kpi-sub" id="ordKpiToday">Para entregar hoy: 0</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">💵 Total Valor Encargos Activos</span>
+            <strong class="kpi-value" id="ordKpiTotalCOP">$ 0</strong>
+            <div class="kpi-sub" id="ordKpiTotalEquiv">$ 0.00 USD | 0.00 Bs</div>
+          </div>
+          <div class="kpi-card success">
+            <span class="kpi-title">✅ Total Abonado por Clientes</span>
+            <strong class="kpi-value" id="ordKpiPaidCOP">$ 0</strong>
+            <div class="kpi-sub">Ya ingresado en caja</div>
+          </div>
+          <div class="kpi-card danger">
+            <span class="kpi-title">⏳ Saldo Pendiente por Cobrar</span>
+            <strong class="kpi-value" id="ordKpiPendingCOP">$ 0</strong>
+            <div class="kpi-sub" id="ordKpiPendingEquiv">$ 0.00 USD | 0.00 Bs</div>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="orderSearchInput" placeholder="Buscar pedido por cliente, descripción o teléfono..." />
+          <select id="orderFilterStatus">
+            <option value="all">Todos los estados</option>
+            <option value="active">⏳ Solo Activos (Pendientes / En Preparación / Listos)</option>
+            <option value="Pendiente">📝 Pendiente</option>
+            <option value="En Preparación">👩‍🍳 En Preparación</option>
+            <option value="Listo para Entregar">🎁 Listo para Entregar</option>
+            <option value="Entregado">✅ Entregado</option>
+            <option value="Cancelado">❌ Cancelado</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Entrega</th>
+                <th>Cliente</th>
+                <th>Descripción del Encargo</th>
+                <th>Total Pedido</th>
+                <th>Abonado</th>
+                <th>Saldo Pendiente</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: CLIENTES ==================== -->
+      <section id="tab-clientes" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>👥 Directorio y Cartera de Clientes</h2>
+            <p class="subtitle">Registra tus clientes frecuentes, teléfonos de contacto, historial de compras y pedidos</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="btnNewCustomer">➕ Nuevo Cliente</button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="customerSearchInput" placeholder="Buscar cliente por nombre, teléfono, documento o dirección..." />
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Documento / ID</th>
+                <th>Teléfono / WhatsApp</th>
+                <th>Dirección</th>
+                <th>Preferencias / Notas</th>
+                <th>Compras / Pedidos</th>
+                <th>Total Comprado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="customersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 4: INVENTARIO PRODUCTOS TERMINADOS ==================== -->
+      <section id="tab-inventario" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>🍰 Inventario de Productos Terminados</h2>
+            <p class="subtitle">Con fotografía personalizada, precios en Pesos (COP) y conversión automática a USD y Bs</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="btnNewProduct">➕ Nuevo Producto</button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="invSearchInput" placeholder="Buscar producto por nombre o categoría..." />
+          <select id="invFilterStatus">
+            <option value="all">Todos los productos</option>
+            <option value="low">⚠️ Stock bajo o agotado</option>
+            <option value="expiring">⏰ Próximos a vencer / vencidos</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Imagen / Producto</th>
+                <th>Categoría</th>
+                <th>Precio (COP)</th>
+                <th>En USD ($)</th>
+                <th>En Bs</th>
+                <th>Stock Actual</th>
+                <th>Caducidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 5: MATERIA PRIMA E INSUMOS ==================== -->
+      <section id="tab-insumos" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>🌾 Materia Prima e Insumos</h2>
+            <p class="subtitle">Control de harina, azúcar, huevos, mantequilla, empaques y alertas de reposición</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="btnNewIngredient">➕ Nuevo Insumo</button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="insumoSearchInput" placeholder="Buscar insumo (ej. Harina, Azúcar, Chocolate)..." />
+          <select id="insumoFilterStatus">
+            <option value="all">Todos los insumos</option>
+            <option value="low">⚠️ Solo Stock Bajo</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Insumo / Materia Prima</th>
+                <th>Unidad</th>
+                <th>Cantidad Disponible</th>
+                <th>Stock Mínimo</th>
+                <th>Costo Unit. Ref (COP)</th>
+                <th>Caducidad Lote</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="ingredientsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 6: CADUCIDAD Y MERMAS ==================== -->
+      <section id="tab-mermas" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>⚠️ Control de Caducidad y Registro de Mermas</h2>
+            <p class="subtitle">Monitorea productos próximos a vencer y descuenta pérdidas o daños del inventario</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-danger" id="btnNewMerma">📉 Registrar Merma / Descarte</button>
+          </div>
+        </div>
+
+        <div class="two-col-grid">
+          <div class="card">
+            <h3>⏰ Alertas de Caducidad (Vencidos o por vencer en ≤ 3 días)</h3>
+            <div id="expiringListContainer" class="alert-list-container"></div>
+          </div>
+
+          <div class="card">
+            <h3>📉 Historial de Mermas Registradas</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fecha/Hora</th>
+                    <th>Tipo</th>
+                    <th>Ítem</th>
+                    <th>Cant.</th>
+                    <th>Costo/Valor (COP)</th>
+                    <th>Motivo</th>
+                  </tr>
+                </thead>
+                <tbody id="mermasTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 7: GASTOS Y MOVIMIENTOS DE CAJA MEJORADO ==================== -->
+      <section id="tab-movimientos" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>💸 Centro de Movimientos de Caja, Ingresos y Gastos</h2>
+            <p class="subtitle">Control detallado de todas las entradas y salidas de dinero que afectan el Cierre de Caja</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-success" id="btnAddIncomeTab">➕ Registrar Ingreso Extra</button>
+            <button class="btn btn-danger" id="btnAddExpenseTab">➖ Registrar Gasto / Salida</button>
+          </div>
+        </div>
+
+        <!-- Resumen de Movimientos del Turno -->
+        <div class="kpi-grid" style="margin-bottom: 18px;">
+          <div class="kpi-card highlight">
+            <span class="kpi-title">🧾 Ventas POS + Abonos Pedidos</span>
+            <strong class="kpi-value" id="movKpiSalesCOP">$ 0</strong>
+            <div class="kpi-sub" id="movKpiSalesCount">0 transacciones hoy</div>
+          </div>
+          <div class="kpi-card success">
+            <span class="kpi-title">➕ Ingresos Extra de Caja</span>
+            <strong class="kpi-value" id="movKpiIncomesCOP">$ 0</strong>
+            <div class="kpi-sub">Cambios/sencillo o aportes</div>
+          </div>
+          <div class="kpi-card danger">
+            <span class="kpi-title">➖ Total Gastos y Salidas</span>
+            <strong class="kpi-value" id="movKpiExpensesCOP">$ 0</strong>
+            <div class="kpi-sub" id="movKpiExpensesSplit">Efectivo: $ 0 | Digital: $ 0</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">🏦 Flujo Neto del Turno</span>
+            <strong class="kpi-value" id="movKpiNetCOP">$ 0</strong>
+            <div class="kpi-sub" id="movKpiNetEquiv">$ 0.00 USD | 0.00 Bs</div>
+          </div>
+        </div>
+
+        <div class="two-col-grid">
+          <div class="card">
+            <div class="card-header-flex">
+              <h3>🧾 Ventas y Abonos de Pedidos del Turno</h3>
+              <input type="text" id="salesFilterInput" class="input-sm" placeholder="Filtrar por cliente o producto..." />
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Cliente / Detalle</th>
+                    <th>Pago y Vuelto</th>
+                    <th>Total (COP)</th>
+                    <th>Equiv.</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="salesHistoryTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header-flex">
+              <h3>📤 Gastos, Pagos a Proveedores e Ingresos Extra</h3>
+              <select id="movTypeFilter" class="input-sm">
+                <option value="all">Todos (Gastos e Ingresos)</option>
+                <option value="gasto">➖ Solo Gastos / Salidas</option>
+                <option value="ingreso">➕ Solo Ingresos Extra</option>
+              </select>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Tipo / Categoría</th>
+                    <th>Concepto / Tercero</th>
+                    <th>Origen / Destino</th>
+                    <th>Monto Orig.</th>
+                    <th>Equiv. COP</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="expensesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 8: ENTREGA DE CUENTAS (CORTE DE CAJA) ==================== -->
+      <section id="tab-corte" class="tab-section">
+        <div class="section-header no-print">
+          <div>
+            <h2>📊 Entrega de Cuentas al Final del Día (Arqueo y Corte de Caja)</h2>
+            <p class="subtitle">Conciliación exacta de efectivo por moneda (COP, USD, Bs), cuentas digitales, abonos y gastos</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-outline" id="btnPrintCorte">🖨️ Imprimir / Guardar PDF</button>
+            <button class="btn btn-primary" id="btnSaveAndCloseDay">🔒 Guardar Corte y Cerrar Turno</button>
+          </div>
+        </div>
+
+        <!-- ENCABEZADO IMPRIMIBLE -->
+        <div class="print-only-header">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <img id="printBrandLogo" src="" alt="Logo" style="width:56px;height:56px;object-fit:contain;border-radius:10px;display:none;" />
+            <div>
+              <h1 id="printBrandName">Dulce Repostería - Entrega de Cuentas</h1>
+              <p id="printDateInfo"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TARJETAS RESUMEN DEL DÍA -->
+        <div class="kpi-grid">
+          <div class="kpi-card highlight">
+            <span class="kpi-title">💰 Ingresos por Ventas + Abonos</span>
+            <strong class="kpi-value" id="corteTotalVentasCOP">$ 0 COP</strong>
+            <div class="kpi-sub" id="corteTotalVentasEquiv">$ 0.00 USD | 0.00 Bs</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">🏦 Fondo Inicial + Ingresos Extra</span>
+            <strong class="kpi-value" id="corteFondoInicialCOP">$ 0 COP</strong>
+            <div class="kpi-sub" id="corteFondoDetalle">COP: 0 | USD: 0 | Bs: 0</div>
+          </div>
+          <div class="kpi-card danger">
+            <span class="kpi-title">📤 Total Gastos / Salidas del Día</span>
+            <strong class="kpi-value" id="corteTotalGastosCOP">$ 0 COP</strong>
+            <div class="kpi-sub" id="corteMermasInfo">Mermas hoy: $ 0 COP</div>
+          </div>
+          <div class="kpi-card success">
+            <span class="kpi-title">✨ Balance Neto Operativo (Ventas - Gastos)</span>
+            <strong class="kpi-value" id="corteUtilidadNetaCOP">$ 0 COP</strong>
+            <div class="kpi-sub" id="corteUtilidadEquiv">$ 0.00 USD | 0.00 Bs</div>
+          </div>
+        </div>
+
+        <div class="two-col-grid" style="margin-top: 20px;">
+          <!-- DESGLOSE POR MÉTODO DE PAGO Y CATEGORÍAS DE GASTO -->
+          <div class="card">
+            <h3>💳 Desglose de Ingresos por Modalidad</h3>
+            <div class="summary-list" id="corteMethodBreakdown">
+              <!-- Dinámico -->
+            </div>
+
+            <h3 style="margin-top: 18px;">📤 Desglose de Gastos por Categoría</h3>
+            <div class="summary-list" id="corteExpenseCategoryBreakdown">
+              <!-- Dinámico -->
+            </div>
+
+            <h3 style="margin-top: 18px;">🍰 Productos Más Vendidos Hoy</h3>
+            <div class="summary-list" id="corteTopProducts">
+              <!-- Dinámico -->
+            </div>
+          </div>
+
+          <!-- ARQUEO DE CAJA (ESPERADO VS REAL POR MONEDA) -->
+          <div class="card">
+            <h3>🧮 Arqueo de Efectivo en Gaveta (Esperado vs. Contado Físico)</h3>
+            <p class="helper-text no-print">Calcula automáticamente: Fondo Inicial + Cobros en Efectivo + Ingresos Extra - Vueltos Entregados - Gastos en Efectivo:</p>
+
+            <div class="arqueo-table-wrap">
+              <table class="data-table arqueo-table">
+                <thead>
+                  <tr>
+                    <th>Moneda</th>
+                    <th>Base Inicial</th>
+                    <th>+ Entradas Efec.</th>
+                    <th>- Salidas/Vueltos</th>
+                    <th>= Esperado</th>
+                    <th>Contado Real</th>
+                    <th>Diferencia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>🇨🇴 Pesos (COP)</strong></td>
+                    <td id="arqBaseCOP">0</td>
+                    <td id="arqInCOP">0</td>
+                    <td id="arqOutCOP">0</td>
+                    <td><strong id="arqExpTotalCOP">0</strong></td>
+                    <td>
+                      <input type="number" id="realCountCOP" class="arqueo-input" step="100" placeholder="0" />
+                    </td>
+                    <td id="arqDiffCOP" class="diff-cell">$ 0</td>
+                  </tr>
+                  <tr>
+                    <td><strong>🇺🇸 Dólares (USD)</strong></td>
+                    <td id="arqBaseUSD">0</td>
+                    <td id="arqInUSD">0</td>
+                    <td id="arqOutUSD">0</td>
+                    <td><strong id="arqExpTotalUSD">0</strong></td>
+                    <td>
+                      <input type="number" id="realCountUSD" class="arqueo-input" step="0.5" placeholder="0.00" />
+                    </td>
+                    <td id="arqDiffUSD" class="diff-cell">$ 0.00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>🇻🇪 Bolívares (Bs)</strong></td>
+                    <td id="arqBaseBS">0</td>
+                    <td id="arqInBS">0</td>
+                    <td id="arqOutBS">0</td>
+                    <td><strong id="arqExpTotalBS">0</strong></td>
+                    <td>
+                      <input type="number" id="realCountBS" class="arqueo-input" step="1" placeholder="0.00" />
+                    </td>
+                    <td id="arqDiffBS" class="diff-cell">0.00 Bs</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Conciliación de Bancos / Digital -->
+            <div class="summary-row" style="margin-top: 12px; background: #eef6ff; border: 1px solid #bfdbfe;">
+              <span>📲 <strong>Total Neto en Cuentas Digitales / Punto (Transferencias + Tarjetas - Gastos Digitales):</strong></span>
+              <strong id="arqNetDigitalCOP">$ 0 COP</strong>
+            </div>
+
+            <div class="arqueo-total-box" id="arqueoGlobalStatusBox">
+              <div>
+                <span>Estado General del Arqueo Físico (Unificado en Pesos):</span>
+                <strong id="arqueoGlobalDiffText">Ingresa el conteo físico para verificar cuadre</strong>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label>Cajero / Responsable que entrega la cuenta:</label>
+              <input type="text" id="corteCashierName" placeholder="Nombre del encargado o turno (ej. Turno Tarde - María)" />
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label>Observaciones del cierre:</label>
+              <textarea id="corteNotes" rows="2" placeholder="Anotaciones sobre el cierre, billetes pendientes, novedades..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORIAL DE CORTES ANTERIORES -->
+        <div class="card no-print" style="margin-top: 20px;">
+          <h3>🗂️ Historial de Entregas de Cuentas Anteriores</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha Cierre</th>
+                  <th>Responsable</th>
+                  <th>Ingresos Ventas (COP)</th>
+                  <th>Gastos Totales (COP)</th>
+                  <th>Efectivo Entregado</th>
+                  <th>Diferencia Arqueo</th>
+                  <th>Notas</th>
+                </tr>
+              </thead>
+              <tbody id="closedDaysHistoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 9: CONFIGURACIÓN Y PERSONALIZACIÓN ==================== -->
+      <section id="tab-config" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>⚙️ Personalización del Sistema y Tasas de Cambio</h2>
+            <p class="subtitle">Personaliza el nombre de tu repostería, categorías, tasas de cambio y respaldos de datos</p>
+          </div>
+        </div>
+
+        <div class="two-col-grid">
+          <div class="card">
+            <h3>🏪 Identidad y Logo de la Repostería</h3>
+            <form id="formConfigBusiness">
+              <input type="hidden" id="cfgBrandLogoData" />
+              <div class="image-upload-row">
+                <div class="image-preview-box" id="cfgLogoPreviewBox">
+                  <span>🧁</span>
+                </div>
+                <div class="image-upload-controls">
+                  <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                    🖼️ Subir Logo desde PC
+                    <input type="file" id="cfgLogoFileInput" accept="image/*" style="display:none;" />
+                  </label>
+                  <input type="url" id="cfgLogoUrlInput" placeholder="O pega la URL del logo..." />
+                  <button type="button" class="btn-text danger" id="btnRemoveBrandLogo">Quitar logo y usar Emoji</button>
+                </div>
+              </div>
+
+              <div class="form-row-inline">
+                <div class="form-group" style="flex: 2;">
+                  <label>Nombre de la Repostería</label>
+                  <input type="text" id="cfgBrandName" required placeholder="Ej. Repostería Dulce Encanto" />
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label>Emoji (si no hay logo)</label>
+                  <input type="text" id="cfgBrandEmoji" maxlength="4" placeholder="🧁" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Eslogan o Subtítulo</label>
+                <input type="text" id="cfgBrandSlogan" placeholder="Ej. Pastelería Artesanal & Café" />
+              </div>
+              <div class="form-group">
+                <label>Categorías de Productos (separadas por coma)</label>
+                <input type="text" id="cfgCategories" placeholder="Pasteles, Cupcakes, Galletas, Postres Fríos, Bebidas, Porciones" />
+              </div>
+
+              <hr class="divider" />
+              <h3>🎨 Paleta de Colores del Sistema</h3>
+              <p class="helper-text" style="margin-bottom:8px;">Elige un tema predefinido con un clic o personaliza cada color a tu gusto:</p>
+
+              <div class="palette-presets-grid" id="palettePresetsGrid">
+                <button type="button" class="palette-preset-btn" data-primary="#c84b6b" data-secondary="#5c3d2e" data-bg="#fdfaf7">
+                  <span class="swatch-pair"><i style="background:#c84b6b"></i><i style="background:#5c3d2e"></i></span>
+                  Frambuesa & Chocolate
+                </button>
+                <button type="button" class="palette-preset-btn" data-primary="#d97706" data-secondary="#3f271d" data-bg="#fffbeb">
+                  <span class="swatch-pair"><i style="background:#d97706"></i><i style="background:#3f271d"></i></span>
+                  Vainilla & Caramelo
+                </button>
+                <button type="button" class="palette-preset-btn" data-primary="#0d9488" data-secondary="#134e4a" data-bg="#f0fdfa">
+                  <span class="swatch-pair"><i style="background:#0d9488"></i><i style="background:#134e4a"></i></span>
+                  Menta & Pistacho
+                </button>
+                <button type="button" class="palette-preset-btn" data-primary="#7c3aed" data-secondary="#2e1065" data-bg="#faf5ff">
+                  <span class="swatch-pair"><i style="background:#7c3aed"></i><i style="background:#2e1065"></i></span>
+                  Lavanda & Arándano
+                </button>
+                <button type="button" class="palette-preset-btn" data-primary="#e11d48" data-secondary="#1f2937" data-bg="#fff1f2">
+                  <span class="swatch-pair"><i style="background:#e11d48"></i><i style="background:#1f2937"></i></span>
+                  Red Velvet & Grafito
+                </button>
+                <button type="button" class="palette-preset-btn" data-primary="#b45309" data-secondary="#18181b" data-bg="#fafaf9">
+                  <span class="swatch-pair"><i style="background:#b45309"></i><i style="background:#18181b"></i></span>
+                  Dorado Gourmet & Negro
+                </button>
+              </div>
+
+              <div class="form-row-inline" style="margin-top: 12px;">
+                <div class="form-group">
+                  <label>Color Principal (Botones/Precios)</label>
+                  <div class="color-picker-wrap">
+                    <input type="color" id="cfgColorPrimary" value="#c84b6b" />
+                    <span id="cfgColorPrimaryHex">#c84b6b</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Color Menú Lateral y Títulos</label>
+                  <div class="color-picker-wrap">
+                    <input type="color" id="cfgColorSecondary" value="#5c3d2e" />
+                    <span id="cfgColorSecondaryHex">#5c3d2e</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Color de Fondo General</label>
+                  <div class="color-picker-wrap">
+                    <input type="color" id="cfgColorBg" value="#fdfaf7" />
+                    <span id="cfgColorBgHex">#fdfaf7</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="header-actions" style="margin-top: 10px;">
+                <button type="submit" class="btn btn-primary">💾 Guardar Identidad, Logo y Colores</button>
+                <button type="button" class="btn btn-outline" id="btnResetColors">🔄 Restaurar Colores Originales</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>💱 Configuración Detallada de Tasas de Cambio</h3>
+            <p class="helper-text">
+              Los precios de tus productos se fijan en <strong>Pesos (COP)</strong>. Aquí puedes ajustar cómo se calculan los Dólares (USD) y Bolívares (Bs).
+            </p>
+            <div class="form-group">
+              <label>🇺🇸 ¿Cuántos Pesos (COP) cuesta 1 Dólar (USD)?</label>
+              <input type="number" id="cfgRateUSD" step="any" min="1" />
+              <small class="field-hint">Ejemplo: Si 1 USD = 4.200 COP, escribe 4200.</small>
+            </div>
+            <div class="form-group">
+              <label>🇻🇪 ¿Cuántos Pesos (COP) cuesta 1 Bolívar (Bs)?</label>
+              <input type="number" id="cfgRateBS" step="any" min="0.01" />
+              <small class="field-hint">Ejemplo: Si 1 Bs = 70 COP, escribe 70.</small>
+            </div>
+            <div class="form-group">
+              <label>💡 O calcula la tasa de Bs usando la tasa Bs/USD (ej. BCV o Paralelo):</label>
+              <div class="form-row-inline">
+                <input type="number" id="cfgHelperBsPerUsd" step="any" placeholder="Ej. 60 Bs por 1$" />
+                <button type="button" class="btn btn-outline" id="btnCalcBsFromUsd">Aplicar relación Bs/$</button>
+              </div>
+              <small class="field-hint">Si pones cuántos Bs equivalen a 1 USD, el sistema calcula automáticamente cuántos Pesos vale 1 Bs.</small>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnSaveRatesConfig">💾 Guardar Tasas</button>
+
+            <hr class="divider" />
+            <h3>💾 Copia de Seguridad (Respaldo)</h3>
+            <p class="helper-text">Tus datos se guardan automáticamente en este navegador. También puedes descargar un respaldo o restaurarlo en otra PC.</p>
+            <div class="header-actions" style="margin-top: 10px;">
+              <button type="button" class="btn btn-outline" id="btnExportBackup">⬇️ Descargar Respaldo (.json)</button>
+              <label class="btn btn-outline" style="cursor:pointer;">
+                ⬆️ Restaurar Respaldo
+                <input type="file" id="inputImportBackup" accept=".json" style="display:none;" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 10: CONTROL DE USUARIOS Y PERMISOS ==================== -->
+      <section id="tab-usuarios" class="tab-section">
+        <div class="section-header">
+          <div>
+            <h2>🔐 Control de Usuarios, Roles y Seguridad</h2>
+            <p class="subtitle">Administra cajeros, reposteros y administradores con PIN de acceso y permisos por área</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-outline" id="btnLockScreenNow">🔒 Bloquear Pantalla Ahora</button>
+            <button class="btn btn-primary" id="btnNewUser">➕ Nuevo Usuario</button>
+          </div>
+        </div>
+
+        <div class="two-col-grid">
+          <div class="card">
+            <h3>👥 Usuarios Registrados en el Sistema</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Rol / Permisos</th>
+                    <th>PIN de Acceso</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+
+            <div class="payment-calc-box" style="margin-top: 14px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;">
+                <input type="checkbox" id="cfgRequireLoginOnStart" />
+                Solicitar PIN de Usuario al abrir el sistema y activar alertas sonoras
+              </label>
+              <small class="field-hint">
+                <strong>Roles:</strong><br>
+                • <strong>👑 Administrador:</strong> Acceso total (Precios, Inventario, Corte, Configuración, Usuarios).<br>
+                • <strong>🧾 Cajero / Vendedor:</strong> Punto de Venta, Pedidos, Clientes, Gastos y Entrega de Cuentas (sin borrar inventario ni configuración).<br>
+                • <strong>👩‍🍳 Repostero / Cocina:</strong> Pedidos, Stock de Productos, Insumos y Mermas.
+              </small>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📋 Bitácora de Accesos y Actividad de Usuarios</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fecha / Hora</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Acción Realizada</th>
+                  </tr>
+                </thead>
+                <tbody id="userAuditTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== MODALES ==================== -->
+
+  <!-- MODAL: PRODUCTO TERMINADO (CON IMAGEN) -->
+  <div class="modal-backdrop hidden" id="modalProduct">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalProductTitle">Nuevo Producto Terminado</h3>
+        <button class="modal-close" data-close="modalProduct">✕</button>
+      </div>
+      <form id="formProduct">
+        <input type="hidden" id="prodId" />
+        <input type="hidden" id="prodImageData" />
+
+        <div class="image-upload-row">
+          <div class="image-preview-box" id="prodImagePreview">
+            <span>🍰</span>
+          </div>
+          <div class="image-upload-controls">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+              📷 Subir Foto desde PC
+              <input type="file" id="prodImageFile" accept="image/*" style="display:none;" />
+            </label>
+            <input type="url" id="prodImageUrlInput" placeholder="O pega el enlace (URL) de una imagen..." />
+            <button type="button" class="btn-text danger" id="btnRemoveProdImage">Quitar imagen</button>
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group" style="flex: 2;">
+            <label>Nombre del Producto *</label>
+            <input type="text" id="prodName" required placeholder="Ej. Torta Tres Leches (Porción)" />
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>Emoji Respaldo</label>
+            <input type="text" id="prodEmoji" placeholder="🍰" maxlength="4" />
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select id="prodCategory" required></select>
+          </div>
+          <div class="form-group">
+            <label>Precio de Venta en Pesos (COP) *</label>
+            <input type="number" id="prodPriceCOP" required min="0" step="50" placeholder="Ej. 12000" />
+          </div>
+        </div>
+
+        <div class="live-conversion-preview" id="prodLiveConversion">
+          Equivale a: <strong>$ 0.00 USD</strong> | <strong>0.00 Bs</strong>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Stock Actual (Unidades) *</label>
+            <input type="number" id="prodStock" required min="0" step="1" value="10" />
+          </div>
+          <div class="form-group">
+            <label>Alerta Stock Mínimo</label>
+            <input type="number" id="prodMinStock" required min="0" step="1" value="3" />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Caducidad (Opcional)</label>
+            <input type="date" id="prodExpiry" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalProduct">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CLIENTE -->
+  <div class="modal-backdrop hidden" id="modalCustomer">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalCustomerTitle">Nuevo Cliente</h3>
+        <button class="modal-close" data-close="modalCustomer">✕</button>
+      </div>
+      <form id="formCustomer">
+        <input type="hidden" id="custId" />
+        <div class="form-row-inline">
+          <div class="form-group" style="flex:2;">
+            <label>Nombre Completo *</label>
+            <input type="text" id="custName" required placeholder="Ej. María Fernanda Gómez" />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Cédula / NIT / ID</label>
+            <input type="text" id="custDoc" placeholder="Ej. V-12345678 / CC" />
+          </div>
+        </div>
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Teléfono / WhatsApp *</label>
+            <input type="text" id="custPhone" required placeholder="Ej. +57 300 123 4567" />
+          </div>
+          <div class="form-group">
+            <label>Dirección de Entrega</label>
+            <input type="text" id="custAddress" placeholder="Barrio, Calle, Referencia..." />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Gustos, Alergias o Notas del Cliente</label>
+          <textarea id="custNotes" rows="2" placeholder="Ej. Prefiere tortas bajas en azúcar, cliente frecuente de cumpleaños..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalCustomer">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVO PEDIDO / ENCARGO -->
+  <div class="modal-backdrop hidden" id="modalOrder">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 id="modalOrderTitle">🎂 Registrar Pedido / Encargo</h3>
+        <button class="modal-close" data-close="modalOrder">✕</button>
+      </div>
+      <form id="formOrder">
+        <input type="hidden" id="ordId" />
+        <div class="form-row-inline">
+          <div class="form-group" style="flex:2;">
+            <label>Cliente *</label>
+            <div style="display:flex; gap:6px;">
+              <select id="ordCustomerId" required style="flex:1;"></select>
+              <button type="button" class="btn btn-outline btn-sm" id="btnNewCustFromOrder" title="Crear cliente rápido">➕</button>
+            </div>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Fecha de Entrega *</label>
+            <input type="date" id="ordDeliveryDate" required />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Hora Entrega</label>
+            <input type="time" id="ordDeliveryTime" value="16:00" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción Detallada del Pedido (Sabor, Relleno, Libras/Porciones, Decoración, Dedicatoria) *</label>
+          <textarea id="ordDescription" required rows="3" placeholder="Ej. Torta de 1 libra sabor vainilla rellena de arequipe, temática Sirena, diga 'Feliz Cumple Sofía 5 años'"></textarea>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Precio Total del Pedido (COP) *</label>
+            <input type="number" id="ordTotalCOP" required min="0" step="100" placeholder="Ej. 85000" />
+          </div>
+          <div class="form-group">
+            <label>Estado del Pedido</label>
+            <select id="ordStatus">
+              <option value="Pendiente">📝 Pendiente</option>
+              <option value="En Preparación">👩‍🍳 En Preparación</option>
+              <option value="Listo para Entregar">🎁 Listo para Entregar</option>
+              <option value="Entregado">✅ Entregado</option>
+              <option value="Cancelado">❌ Cancelado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="live-conversion-preview" id="ordLiveConversion">
+          Valor Total equivale a: <strong>$ 0.00 USD</strong> | <strong>0.00 Bs</strong>
+        </div>
+
+        <!-- Sección de Abono Inicial (solo al crear nuevo pedido) -->
+        <div id="ordInitialPaymentSection" class="payment-calc-box">
+          <label class="section-label">💰 Abono Inicial / Seña al Encargar (Se suma a la Caja de Hoy)</label>
+          <div class="form-row-inline">
+            <div class="form-group">
+              <label>Monto Abonado (en COP)</label>
+              <input type="number" id="ordInitialDepositCOP" min="0" step="100" value="0" />
+            </div>
+            <div class="form-group">
+              <label>Método / Moneda en que entró el abono</label>
+              <select id="ordDepositMethod">
+                <option value="efectivo_COP">💵 Efectivo Pesos (COP)</option>
+                <option value="efectivo_USD">💵 Efectivo Dólares (USD)</option>
+                <option value="efectivo_BS">💵 Efectivo Bolívares (Bs)</option>
+                <option value="transferencia">📲 Transferencia / Pago Móvil / QR</option>
+                <option value="tarjeta">💳 Tarjeta / Punto de Venta</option>
+              </select>
+            </div>
+          </div>
+          <small class="field-hint" id="ordPendingPreview">Saldo pendiente por pagar en la entrega: $ 0 COP</small>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalOrder">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Pedido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ABONAR O COBRAR SALDO DE UN PEDIDO -->
+  <div class="modal-backdrop hidden" id="modalOrderPayment">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💵 Registrar Abono o Pago de Saldo</h3>
+        <button class="modal-close" data-close="modalOrderPayment">✕</button>
+      </div>
+      <form id="formOrderPayment">
+        <input type="hidden" id="payOrdId" />
+        <div class="live-conversion-preview" id="payOrdSummaryInfo"></div>
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Monto a Abonar (expresado en COP) *</label>
+            <input type="number" id="payOrdAmountCOP" required min="1" step="any" />
+          </div>
+          <div class="form-group">
+            <label>¿Cómo pagó el cliente? *</label>
+            <select id="payOrdMethod" required>
+              <option value="efectivo_COP">💵 Efectivo Pesos (COP)</option>
+              <option value="efectivo_USD">💵 Efectivo Dólares (USD)</option>
+              <option value="efectivo_BS">💵 Efectivo Bolívares (Bs)</option>
+              <option value="transferencia">📲 Transferencia / Pago Móvil / QR</option>
+              <option value="tarjeta">💳 Tarjeta / Punto de Venta</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="payOrdMarkDelivered" checked />
+            Si el saldo llega a $0, marcar automáticamente como <strong>"✅ Entregado"</strong>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalOrderPayment">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar Pago en Caja</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: MATERIA PRIMA / INSUMO -->
+  <div class="modal-backdrop hidden" id="modalIngredient">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalIngredientTitle">Nuevo Insumo / Materia Prima</h3>
+        <button class="modal-close" data-close="modalIngredient">✕</button>
+      </div>
+      <form id="formIngredient">
+        <input type="hidden" id="ingId" />
+        <div class="form-row-inline">
+          <div class="form-group" style="flex:2;">
+            <label>Nombre del Insumo *</label>
+            <input type="text" id="ingName" required placeholder="Ej. Harina de Trigo Todo Uso" />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Unidad de Medida *</label>
+            <select id="ingUnit" required>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="g">Gramos (g)</option>
+              <option value="L">Litros (L)</option>
+              <option value="ml">Mililitros (ml)</option>
+              <option value="unid">Unidades (unid)</option>
+              <option value="empaque">Empaques / Cajas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Cantidad Disponible *</label>
+            <input type="number" id="ingStock" required min="0" step="any" placeholder="Ej. 25" />
+          </div>
+          <div class="form-group">
+            <label>Alerta Stock Mínimo *</label>
+            <input type="number" id="ingMinStock" required min="0" step="any" placeholder="Ej. 5" />
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Costo por Unidad en Pesos (COP)</label>
+            <input type="number" id="ingCostCOP" min="0" step="any" value="0" />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Caducidad (Opcional)</label>
+            <input type="date" id="ingExpiry" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalIngredient">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Insumo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR GASTO / SALIDA O INGRESO EXTRA DE CAJA -->
+  <div class="modal-backdrop hidden" id="modalExpense">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalMovementTitle">➖ Registrar Gasto o Movimiento de Caja</h3>
+        <button class="modal-close" data-close="modalExpense">✕</button>
+      </div>
+      <form id="formExpense">
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Tipo de Movimiento *</label>
+            <select id="expMovType" required>
+              <option value="gasto">➖ Gasto / Salida de Dinero</option>
+              <option value="ingreso">➕ Ingreso Extra / Entrada de Sencillo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select id="expCategory" required>
+              <option value="Compra de Insumos">🌾 Compra de Insumos / Materia Prima</option>
+              <option value="Pago a Proveedores">🚚 Pago a Proveedores</option>
+              <option value="Servicios / Local">💡 Servicios / Alquiler / Mantenimiento</option>
+              <option value="Nómina / Personal">👩‍🍳 Nómina / Vale / Personal</option>
+              <option value="Domicilios / Transporte">🛵 Domicilios / Transporte</option>
+              <option value="Ingreso de Cambio / Sencillo">🪙 Ingreso de Cambio / Sencillo a Caja</option>
+              <option value="Otros">📌 Otros Movimientos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Concepto, Proveedor o Descripción *</label>
+          <input type="text" id="expConcept" required placeholder="Ej. Compra de leche y fresas, Pago domiciliario, Ingreso de sencillo..." />
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Moneda *</label>
+            <select id="expCurrency" required>
+              <option value="COP">🇨🇴 Pesos (COP)</option>
+              <option value="USD">🇺🇸 Dólares (USD)</option>
+              <option value="BS">🇻🇪 Bolívares (Bs)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Monto (en la moneda elegida) *</label>
+            <input type="number" id="expAmount" required min="0.01" step="any" placeholder="Ej. 15000" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>¿Qué gaveta o cuenta afecta? *</label>
+          <select id="expSource">
+            <option value="efectivo">💵 Gaveta de Efectivo Físico (afecta el Arqueo de Caja)</option>
+            <option value="digital">📲 Cuenta Bancaria / Transferencia (afecta saldo Digital)</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalExpense">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitMovement">Guardar Movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FONDO INICIAL DE CAJA -->
+  <div class="modal-backdrop hidden" id="modalBaseCash">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🏦 Fondo Inicial de Caja (Base para dar vuelto)</h3>
+        <button class="modal-close" data-close="modalBaseCash">✕</button>
+      </div>
+      <form id="formBaseCash">
+        <p class="helper-text">Ingresa con cuánto efectivo inicia la caja al abrir el día en cada moneda:</p>
+        <div class="form-group">
+          <label>🇨🇴 Efectivo Inicial en Pesos (COP)</label>
+          <input type="number" id="baseCashCOP" min="0" step="100" value="0" />
+        </div>
+        <div class="form-group">
+          <label>🇺🇸 Efectivo Inicial en Dólares (USD)</label>
+          <input type="number" id="baseCashUSD" min="0" step="0.5" value="0" />
+        </div>
+        <div class="form-group">
+          <label>🇻🇪 Efectivo Inicial en Bolívares (Bs)</label>
+          <input type="number" id="baseCashBS" min="0" step="1" value="0" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalBaseCash">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Fondo Inicial</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR MERMA / DESCARTE -->
+  <div class="modal-backdrop hidden" id="modalMerma">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📉 Registrar Merma (Producto o Insumo Dañado/Vencido)</h3>
+        <button class="modal-close" data-close="modalMerma">✕</button>
+      </div>
+      <form id="formMerma">
+        <div class="form-group">
+          <label>Tipo de Ítem *</label>
+          <select id="mermaType" required>
+            <option value="product">🍰 Producto Terminado</option>
+            <option value="ingredient">🌾 Materia Prima / Insumo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Seleccionar Ítem del Inventario *</label>
+          <select id="mermaItemSelect" required></select>
+        </div>
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Cantidad a Descontar *</label>
+            <input type="number" id="mermaQty" required min="0.01" step="any" value="1" />
+          </div>
+          <div class="form-group">
+            <label>Motivo de la Merma *</label>
+            <select id="mermaReason" required>
+              <option value="Fecha de caducidad vencida">Fecha de caducidad vencida</option>
+              <option value="Se dañó en vitrina / manipulación">Se dañó en vitrina / manipulación</option>
+              <option value="Error de horneado / preparación">Error de horneado / preparación</option>
+              <option value="Degustación / Cortesía">Degustación / Cortesía</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalMerma">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Descontar de Inventario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CALCULADORA DE DIVISAS RÁPIDA -->
+  <div class="modal-backdrop hidden" id="modalConverter">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💱 Calculadora Rápida de Monedas</h3>
+        <button class="modal-close" data-close="modalConverter">✕</button>
+      </div>
+      <div class="converter-body">
+        <p class="helper-text">Escribe en cualquiera de las tres monedas para ver la conversión inmediata a la tasa del día:</p>
+        <div class="form-group">
+          <label>🇨🇴 Pesos (COP)</label>
+          <input type="number" id="convInputCOP" step="any" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>🇺🇸 Dólares (USD)</label>
+          <input type="number" id="convInputUSD" step="any" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label>🇻🇪 Bolívares (Bs)</label>
+          <input type="number" id="convInputBS" step="any" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modalConverter">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VINCULACIÓN DE WHATSAPP AUTOMÁTICO POR QR -->
+  <div class="modal-backdrop hidden" id="modalWhatsApp">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📱 WhatsApp Automático (Conexión Directa por QR)</h3>
+        <button class="modal-close" data-close="modalWhatsApp">✕</button>
+      </div>
+      <div class="wa-modal-body" style="text-align:center;">
+        <div id="waStatusBadge" class="status-badge pendiente" style="font-size:13px; padding:6px 14px; margin-bottom:10px;">
+          Verificando estado...
+        </div>
+        <p class="helper-text" id="waHelperInstructions">
+          Escanea el Código QR desde el WhatsApp de la repostería (<strong>Menú ➔ Dispositivos vinculados ➔ Vincular un dispositivo</strong>). Una vez conectado, los avisos de "Pedido Listo" se enviarán <strong>100% solos en segundo plano</strong> sin abrir pestañas.
+        </p>
+
+        <div id="waQrContainer" style="margin: 16px auto; width: 250px; height: 250px; border: 2px dashed var(--border); border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
+          <span style="color:var(--text-muted);font-size:13px;">Cargando QR...</span>
+        </div>
+
+        <div id="waTestSection" class="payment-calc-box hidden" style="text-align:left; margin-top:12px;">
+          <label class="section-label">🧪 Enviar Mensaje de Prueba Automático</label>
+          <div class="form-row-inline">
+            <input type="text" id="waTestPhone" placeholder="Número con cód. país (ej. 58414... o 57300...)" style="flex:1; padding:8px; border:1px solid var(--border); border-radius:6px;" />
+            <button type="button" class="btn btn-success btn-sm" id="btnSendTestWa">Enviar Prueba</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnLogoutWa">🔌 Desvincular / Nuevo QR</button>
+        <button type="button" class="btn btn-outline" data-close="modalWhatsApp">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INSTALACIÓN EN ANDROID / APK -->
+  <div class="modal-backdrop hidden" id="modalApk">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3>📲 Instalar Aplicación en Android / APK</h3>
+        <button class="modal-close" data-close="modalApk">✕</button>
+      </div>
+      <div style="text-align:center;">
+        <p class="helper-text">
+          Conecta tu teléfono Android al <strong>mismo Wi-Fi</strong> de esta PC y escanea este Código QR con la cámara para abrir e instalar la aplicación a pantalla completa:
+        </p>
+
+        <div id="apkQrContainer" style="margin: 14px auto; width: 220px; height: 220px; border: 2px dashed var(--border); border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #fff;">
+          <span style="color:var(--text-muted);font-size:13px;">Generando QR...</span>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <strong id="apkMobileUrlText" style="color:var(--primary);font-size:15px;">http://127.0.0.1:8080</strong>
+        </div>
+
+        <button type="button" class="btn btn-primary hidden" id="btnPwaInstallPrompt" style="margin-bottom:12px;">
+          ⬇️ Instalar App en este Dispositivo Ahora
+        </button>
+
+        <div class="payment-calc-box" style="text-align:left;">
+          <label class="section-label">🌐 Conexión con Servidor de WhatsApp (Para uso desde APK)</label>
+          <p class="helper-text" style="margin-bottom:6px;">
+            Si usas el archivo <code>.apk</code> nativo en tu celular, escribe aquí la dirección del servidor de tu PC para que el celular también envíe los WhatsApp automáticos:
+          </p>
+          <div class="form-row-inline">
+            <input type="text" id="cfgApiBaseUrl" placeholder="Ej. http://192.168.1.50:8080" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:6px;" />
+            <button type="button" class="btn btn-outline btn-sm" id="btnSaveApiBaseUrl">Guardar IP</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modalApk">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR USUARIO -->
+  <div class="modal-backdrop hidden" id="modalUser">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalUserTitle">➕ Nuevo Usuario</h3>
+        <button class="modal-close" data-close="modalUser">✕</button>
+      </div>
+      <form id="formUser">
+        <input type="hidden" id="usrId" />
+        <div class="form-row-inline">
+          <div class="form-group" style="flex:2;">
+            <label>Nombre Completo *</label>
+            <input type="text" id="usrName" required placeholder="Ej. Laura Martínez" />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Avatar / Emoji</label>
+            <input type="text" id="usrAvatar" maxlength="4" value="👩‍💼" />
+          </div>
+        </div>
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>Rol en la Repostería *</label>
+            <select id="usrRole" required>
+              <option value="admin">👑 Administrador (Acceso Total)</option>
+              <option value="cajero">🧾 Cajero / Vendedor (Ventas, Pedidos y Caja)</option>
+              <option value="repostero">👩‍🍳 Repostero / Cocina (Producción, Stock y Pedidos)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>PIN o Contraseña de Acceso *</label>
+            <input type="password" id="usrPin" required minlength="3" maxlength="12" placeholder="Ej. 1234" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modalUser">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CENTRO DE ALERTAS NOTORIAS / CRÍTICAS -->
+  <div class="modal-backdrop hidden" id="modalCriticalAlerts">
+    <div class="modal-card" style="max-width: 650px; border-top: 6px solid var(--danger);">
+      <div class="modal-header">
+        <h3>🚨 Centro de Alertas Críticas de la Repostería</h3>
+        <button class="modal-close" data-close="modalCriticalAlerts">✕</button>
+      </div>
+      <div id="criticalAlertsModalBody" class="critical-alerts-modal-body">
+        <!-- Tarjetas de alerta dinámicas -->
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnTestAlertSound">🔊 Probar Sonido de Alerta</button>
+        <button type="button" class="btn btn-primary" data-close="modalCriticalAlerts">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA DE INICIO DE SESIÓN / BLOQUEO POR PIN -->
+  <div class="login-overlay hidden" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-logo" id="loginBrandLogo">🧁</div>
+        <h2 id="loginBrandTitle">Dulce Repostería</h2>
+        <p>Selecciona tu usuario e ingresa tu PIN para acceder al turno</p>
+      </div>
+
+      <div class="login-users-grid" id="loginUsersGrid">
+        <!-- Tarjetas de usuario para seleccionar -->
+      </div>
+
+      <form id="formLoginPin" class="login-pin-form">
+        <input type="hidden" id="loginSelectedUserId" />
+        <label id="loginSelectedUserLabel">Ingresa el PIN de acceso:</label>
+        <div class="pin-input-row">
+          <input type="password" id="loginPinInput" placeholder="••••" maxlength="12" autocomplete="off" required />
+          <button type="submit" class="btn btn-primary btn-lg">Entrar ➔</button>
+        </div>
+        <div class="pin-keypad">
+          <button type="button" class="pin-key" data-digit="1">1</button>
+          <button type="button" class="pin-key" data-digit="2">2</button>
+          <button type="button" class="pin-key" data-digit="3">3</button>
+          <button type="button" class="pin-key" data-digit="4">4</button>
+          <button type="button" class="pin-key" data-digit="5">5</button>
+          <button type="button" class="pin-key" data-digit="6">6</button>
+          <button type="button" class="pin-key" data-digit="7">7</button>
+          <button type="button" class="pin-key" data-digit="8">8</button>
+          <button type="button" class="pin-key" data-digit="9">9</button>
+          <button type="button" class="pin-key" data-digit="clear">C</button>
+          <button type="button" class="pin-key" data-digit="0">0</button>
+          <button type="button" class="pin-key" data-digit="back">⌫</button>
+        </div>
+        <small class="field-hint" style="display:block;margin-top:8px;">
+          💡 PIN por defecto: <strong>Admin: 1234</strong> | <strong>Cajera: 1111</strong> | <strong>Repostero: 2222</strong>
+        </small>
+      </form>
+    </div>
+  </div>
+
+  <!-- BARRA DE NAVEGACIÓN INFERIOR ESTILO APP MÓVIL -->
+  <nav class="mobile-bottom-nav no-print" id="mobileBottomNav">
+    <button type="button" class="mob-nav-btn active" data-mobtab="pos">
+      <span class="mob-nav-icon">🛒</span>
+      <span>Caja</span>
+    </button>
+    <button type="button" class="mob-nav-btn" data-mobtab="pedidos">
+      <span class="mob-nav-icon">🎂</span>
+      <span>Pedidos</span>
+    </button>
+    <button type="button" class="mob-nav-btn" data-mobtab="inventario">
+      <span class="mob-nav-icon">🍰</span>
+      <span>Stock</span>
+    </button>
+    <button type="button" class="mob-nav-btn" data-mobtab="corte">
+      <span class="mob-nav-icon">📊</span>
+      <span>Corte</span>
+    </button>
+    <button type="button" class="mob-nav-btn" id="btnBottomNavMore">
+      <span class="mob-nav-icon">☰</span>
+      <span>Menú</span>
+    </button>
+  </nav>
+
+  <div id="toastContainer" class="toast-container no-print"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

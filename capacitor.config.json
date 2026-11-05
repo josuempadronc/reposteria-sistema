@@ -1,0 +1,11 @@
+{
+  "appId": "com.dulcereposteria.pos",
+  "appName": "Dulce Reposteria POS",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}
+
