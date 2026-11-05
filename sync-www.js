@@ -6,7 +6,7 @@ if (!fs.existsSync(wwwDir)) {
   fs.mkdirSync(wwwDir, { recursive: true });
 }
 
-const files = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'icon.svg', 'sw.js'];
+const files = ['index.html', 'admin.html', 'styles.css', 'app.js', 'manifest.json', 'icon.svg', 'sw.js'];
 for (const f of files) {
   const src = path.join(__dirname, f);
   const dest = path.join(wwwDir, f);

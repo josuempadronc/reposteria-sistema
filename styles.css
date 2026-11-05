@@ -2542,6 +2542,85 @@ body {
   border-color: var(--primary);
 }
 
+/* BARRA FLOTANTE DE RECORRIDO GUIADO INTERACTIVO MÓDULO POR MÓDULO */
+.interactive-tour-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 28px);
+  max-width: 680px;
+  background: var(--secondary);
+  color: #fff;
+  border: 2.5px solid #fde68a;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+  z-index: 1950;
+}
+
+.itour-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.itour-step-badge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.itour-header strong {
+  font-size: 14.5px;
+  color: #fde68a;
+  flex: 1;
+}
+
+.itour-close-btn {
+  background: rgba(255, 255, 255, 0.14);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.itour-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.94);
+  margin-bottom: 12px;
+}
+
+.itour-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tour-spotlight-pulse {
+  outline: 3px solid #f59e0b !important;
+  box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.35) !important;
+  transition: all 0.25s ease;
+}
+
+@media (max-width: 1024px) {
+  .interactive-tour-bar {
+    bottom: 68px;
+    padding: 12px;
+  }
+}
+
 @media (max-width: 600px) {
   .onb-steps-header {
     grid-template-columns: 1fr;

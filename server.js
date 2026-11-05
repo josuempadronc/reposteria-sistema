@@ -6,6 +6,36 @@ const os = require('os');
 const PORT = 8080;
 const ROOT = __dirname;
 const AUTH_DIR = path.join(ROOT, 'wa_auth_info');
+const LICENSES_FILE = path.join(ROOT, 'licenses_db.json');
+
+function loadLicensesDb() {
+  try {
+    if (fs.existsSync(LICENSES_FILE)) {
+      return JSON.parse(fs.readFileSync(LICENSES_FILE, 'utf8'));
+    }
+  } catch (_) {}
+  return {
+    requireManualApproval: true,
+    installations: []
+  };
+}
+
+function saveLicensesDb(db) {
+  try {
+    fs.writeFileSync(LICENSES_FILE, JSON.stringify(db, null, 2), 'utf8');
+  } catch (_) {}
+}
+
+function generateUnlockPin(licenseId, refDigits) {
+  const cleanId = String(licenseId || 'REP').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+  const cleanRef = String(refDigits || '0000').replace(/[^0-9]/g, '');
+  let sum = 0;
+  const combined = `${cleanId}-${cleanRef}-BCV20`;
+  for (let i = 0; i < combined.length; i++) {
+    sum = (sum * 31 + combined.charCodeAt(i)) % 900000;
+  }
+  return String(100000 + (sum % 900000));
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -147,22 +177,6 @@ const server = http.createServer(async (req, res) => {
 
   if (safeUrl === '/api/bcv-euro' && req.method === 'GET') {
     try {
-      const r = await fetch('https://ve.dolarapi.com/v1/cotizaciones/eur');
-      if (r.ok) {
-        const data = await r.json();
-        const rate = parseFloat(data.promedio || data.venta || data.compra);
-        if (rate > 0) {
-          return sendJson(res, 200, {
-            ok: true,
-            currency: 'EUR',
-            source: 'BCV Oficial (EUR)',
-            rate,
-            updatedAt: data.fechaActualizacion || new Date().toISOString()
-          });
-        }
-      }
-    } catch (_) {}
-    try {
       const [rUsd, rFx] = await Promise.all([
         fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
         fetch('https://open.er-api.com/v6/latest/EUR')
@@ -184,6 +198,192 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (_) {}
     return sendJson(res, 503, { ok: false, error: 'No se pudo consultar BCV en este momento' });
+  }
+
+  // ==================== API CENTRAL DE ADMINISTRACIÓN DE APKS Y MEMBRESÍAS ====================
+  if (safeUrl === '/api/licenses/sync' && req.method === 'POST') {
+    const body = await parseJsonBody(req);
+    const licenseId = String(body.licenseId || '').trim();
+    if (!licenseId) return sendJson(res, 400, { ok: false, error: 'Falta licenseId' });
+
+    const db = loadLicensesDb();
+    let inst = db.installations.find((x) => x.licenseId === licenseId);
+    const nowIso = new Date().toISOString();
+
+    if (!inst) {
+      inst = {
+        licenseId,
+        brandName: body.brandName || 'Repostería Sin Nombre',
+        brandPhone: body.brandPhone || '',
+        platform: body.platform || 'Android / Web',
+        installedAt: nowIso,
+        lastSeenAt: nowIso,
+        status: body.status || 'trial',
+        expiresAt: body.expiresAt || new Date(Date.now() + 7 * 86400000).toISOString(),
+        pendingPayment: null,
+        payments: []
+      };
+      db.installations.unshift(inst);
+    } else {
+      inst.lastSeenAt = nowIso;
+      if (body.brandName) inst.brandName = body.brandName;
+      if (body.brandPhone !== undefined) inst.brandPhone = body.brandPhone;
+      if (body.platform) inst.platform = body.platform;
+      // Si el servidor aún no tenía fecha y el cliente sí:
+      if (!inst.expiresAt && body.expiresAt) inst.expiresAt = body.expiresAt;
+    }
+
+    saveLicensesDb(db);
+    return sendJson(res, 200, {
+      ok: true,
+      requireManualApproval: db.requireManualApproval,
+      installation: inst
+    });
+  }
+
+  if (safeUrl === '/api/licenses/report-payment' && req.method === 'POST') {
+    const body = await parseJsonBody(req);
+    const licenseId = String(body.licenseId || '').trim();
+    const refDigits = String(body.refDigits || '').replace(/[^0-9]/g, '');
+    const unlockPin = String(body.unlockPin || '').trim();
+
+    if (!licenseId || refDigits.length < 4) {
+      return sendJson(res, 400, { ok: false, error: 'Datos de referencia incompletos' });
+    }
+
+    const db = loadLicensesDb();
+    let inst = db.installations.find((x) => x.licenseId === licenseId);
+    const nowIso = new Date().toISOString();
+
+    if (!inst) {
+      inst = {
+        licenseId,
+        brandName: body.brandName || 'Repostería',
+        brandPhone: body.brandPhone || '',
+        platform: body.platform || 'Android / Web',
+        installedAt: nowIso,
+        lastSeenAt: nowIso,
+        status: 'trial',
+        expiresAt: nowIso,
+        pendingPayment: null,
+        payments: []
+      };
+      db.installations.unshift(inst);
+    }
+
+    const expectedPin = generateUnlockPin(licenseId, refDigits);
+
+    // Si el administrador desactivó la aprobación manual O si ingresaron el PIN maestro de activación:
+    if (!db.requireManualApproval || (unlockPin && unlockPin === expectedPin)) {
+      inst.status = 'active';
+      inst.expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+      inst.pendingPayment = null;
+      inst.payments = inst.payments || [];
+      inst.payments.unshift({
+        id: 'pay_' + Date.now(),
+        timestamp: nowIso,
+        refDigits,
+        amountUSD: 20,
+        rateEurBcv: body.rateEurBcv || 52.5,
+        amountBs: body.amountBs || 1050,
+        approvedBy: unlockPin ? 'PIN Maestro' : 'Auto-Validación'
+      });
+      saveLicensesDb(db);
+      return sendJson(res, 200, {
+        ok: true,
+        approved: true,
+        installation: inst
+      });
+    }
+
+    // Dejar en espera de aprobación en el Panel de Administración (/admin.html)
+    inst.status = 'pending_validation';
+    inst.pendingPayment = {
+      refDigits,
+      amountUSD: 20,
+      rateEurBcv: body.rateEurBcv || 52.5,
+      amountBs: body.amountBs || 1050,
+      reportedAt: nowIso,
+      unlockPin: expectedPin
+    };
+    saveLicensesDb(db);
+
+    return sendJson(res, 200, {
+      ok: true,
+      approved: false,
+      pending: true,
+      installation: inst
+    });
+  }
+
+  if (safeUrl === '/api/admin/licenses' && req.method === 'GET') {
+    const db = loadLicensesDb();
+    const enriched = db.installations.map((inst) => ({
+      ...inst,
+      sampleUnlockPin: inst.pendingPayment
+        ? generateUnlockPin(inst.licenseId, inst.pendingPayment.refDigits)
+        : null
+    }));
+    return sendJson(res, 200, {
+      ok: true,
+      requireManualApproval: db.requireManualApproval,
+      installations: enriched
+    });
+  }
+
+  if (safeUrl === '/api/admin/action' && req.method === 'POST') {
+    const body = await parseJsonBody(req);
+    const { action, licenseId, days } = body;
+    const db = loadLicensesDb();
+
+    if (action === 'toggle_manual_approval') {
+      db.requireManualApproval = Boolean(body.requireManualApproval);
+      saveLicensesDb(db);
+      return sendJson(res, 200, { ok: true, requireManualApproval: db.requireManualApproval });
+    }
+
+    const inst = db.installations.find((x) => x.licenseId === licenseId);
+    if (!inst) return sendJson(res, 404, { ok: false, error: 'APK no encontrada' });
+
+    const nowIso = new Date().toISOString();
+
+    if (action === 'approve_payment') {
+      const p = inst.pendingPayment || { refDigits: body.refDigits || 'MANUAL', amountBs: 0, rateEurBcv: 0 };
+      inst.status = 'active';
+      inst.expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+      inst.payments = inst.payments || [];
+      inst.payments.unshift({
+        id: 'pay_' + Date.now(),
+        timestamp: nowIso,
+        refDigits: p.refDigits,
+        amountUSD: 20,
+        rateEurBcv: p.rateEurBcv,
+        amountBs: p.amountBs,
+        approvedBy: 'Admin Panel'
+      });
+      inst.pendingPayment = null;
+    } else if (action === 'reject_payment') {
+      inst.status = 'expired';
+      inst.pendingPayment = null;
+      inst.lastRejectionNote = body.reason || 'Referencia de Pago Móvil no encontrada en Banco Mercantil.';
+    } else if (action === 'grant_days') {
+      const addDays = Number(days) || 7;
+      const baseTime = inst.expiresAt && new Date(inst.expiresAt).getTime() > Date.now()
+        ? new Date(inst.expiresAt).getTime()
+        : Date.now();
+      inst.expiresAt = new Date(baseTime + addDays * 86400000).toISOString();
+      if (inst.status === 'expired' || inst.status === 'suspended') {
+        inst.status = addDays >= 25 ? 'active' : 'trial';
+      }
+    } else if (action === 'suspend') {
+      inst.status = 'suspended';
+      inst.expiresAt = new Date(Date.now() - 1000).toISOString();
+    } else if (action === 'delete') {
+      db.installations = db.installations.filter((x) => x.licenseId !== licenseId);
+    }
+
+    saveLicensesDb(db);
+    return sendJson(res, 200, { ok: true, installation: inst });
   }
 
   if (safeUrl === '/api/wa/status' && req.method === 'GET') {

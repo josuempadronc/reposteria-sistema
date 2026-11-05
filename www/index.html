@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Sistema POS, Pedidos, Inventario y Caja - Repostería</title>
-  <link rel="manifest" href="manifest.json?v=6" />
+  <link rel="manifest" href="manifest.json?v=7" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -96,14 +96,17 @@
             <strong id="sidebarMembershipBadge" style="font-size:12px; color:#fde68a;">🎁 Prueba: 7 días</strong>
             <span style="font-size:11px; opacity:0.85;">$20/mes</span>
           </div>
-          <div style="display:flex; gap:6px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <button type="button" class="btn-switch-user" id="btnOpenMembershipSidebar" style="flex:1; background:var(--primary); border:none;">
               💎 Membresía
             </button>
             <button type="button" class="btn-switch-user" id="btnOpenTutorialSidebar" style="flex:1;">
-              🎓 Tutorial
+              🎓 Guía Paso a Paso
             </button>
           </div>
+          <a href="admin.html" target="_blank" class="btn-switch-user" style="display:block; text-align:center; text-decoration:none; margin-top:6px; font-size:11px; background:rgba(0,0,0,0.28);">
+            🛡️ Panel Maestro Admin APKs
+          </a>
         </div>
         <div class="cash-status-card" id="sidebarCashStatus" style="margin-top:8px;">
           <div class="status-row">
@@ -1712,16 +1715,16 @@
     <div class="modal-card onboarding-wizard-card" style="max-width: 760px;">
       <!-- Cabecera de Pasos -->
       <div class="onb-steps-header">
-        <div class="onb-step-pill active" id="onbStepIndicator1">1. 🎨 Personalizar App</div>
-        <div class="onb-step-pill" id="onbStepIndicator2">2. 📚 Tutorial de Módulos</div>
-        <div class="onb-step-pill" id="onbStepIndicator3">3. 🎁 Activar 7 Días Gratis</div>
+        <div class="onb-step-pill active" id="onbStepIndicator1">1. 🎨 Personalizar Negocio</div>
+        <div class="onb-step-pill" id="onbStepIndicator2">2. 🍰 Crea tu 1er Producto</div>
+        <div class="onb-step-pill" id="onbStepIndicator3">3. 🧭 Tour Módulo por Módulo</div>
       </div>
 
       <!-- PASO 1: DATOS DEL NEGOCIO, COLORES Y TASAS -->
       <div id="onbStep1" class="onb-step-body">
         <div style="text-align:center; margin-bottom:14px;">
-          <h2 style="color:var(--secondary); font-size:21px;">👋 ¡Bienvenido! Configura tu Repostería</h2>
-          <p class="subtitle">Personaliza el nombre, colores y tasas de tu negocio antes de comenzar</p>
+          <h2 style="color:var(--secondary); font-size:21px;">👋 ¡Bienvenido! Paso 1: Configura tu Repostería</h2>
+          <p class="subtitle">Personaliza el nombre, colores y tasas de cambio de tu negocio</p>
         </div>
 
         <div class="form-row-inline">
@@ -1741,13 +1744,13 @@
             <input type="text" id="onbBrandSlogan" placeholder="Ej. Pastelería, Postres y Café" />
           </div>
           <div class="form-group">
-            <label>📱 WhatsApp / Teléfono del Negocio</label>
-            <input type="text" id="onbBrandPhone" placeholder="Ej. +58 412 0000000" />
+            <label>📱 WhatsApp / Teléfono del Propietario *</label>
+            <input type="text" id="onbBrandPhone" placeholder="Ej. 04127049393" />
           </div>
         </div>
 
         <div class="form-group">
-          <label>🎨 Elige el Tema de Colores de tu Aplicación (Se aplica en vivo):</label>
+          <label>🎨 Elige los Colores de tu Aplicación (Se aplican en vivo):</label>
           <div class="palette-presets-grid" style="margin-top:6px;">
             <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#c84b6b" data-s="#5c3d2e" data-b="#fdfaf7">
               <span class="swatch-pair"><i style="background:#c84b6b"></i><i style="background:#5c3d2e"></i></span>
@@ -1795,106 +1798,155 @@
 
         <div class="modal-footer" style="justify-content:flex-end;">
           <button type="button" class="btn btn-primary btn-lg" id="btnOnbNextToStep2">
-            Guardar Datos y Ver Tutorial de Uso ➔
+            Siguiente: Crear mi Primer Producto ➔
           </button>
         </div>
       </div>
 
-      <!-- PASO 2: TUTORIAL INTERACTIVO DE CADA MÓDULO -->
+      <!-- PASO 2: CREA TU PRIMER PRODUCTO REAL PASO A PASO -->
       <div id="onbStep2" class="onb-step-body hidden">
         <div style="text-align:center; margin-bottom:12px;">
-          <h2 style="color:var(--secondary); font-size:20px;">📚 Cómo Utilizar cada Módulo de tu Sistema</h2>
-          <p class="subtitle">Toca cada módulo para conocer cómo sacarle el máximo provecho</p>
+          <h2 style="color:var(--secondary); font-size:20px;">🍰 Paso 2: ¡Crea tu Primer Producto para la Vitrina!</h2>
+          <p class="subtitle">Vamos a registrar juntos tu primer producto estrella para que veas cómo calcula los precios en Pesos, Dólares y Bolívares automáticamente</p>
         </div>
 
-        <div class="tutorial-modules-nav" id="tutorialModulesNav">
-          <button type="button" class="tut-mod-btn active" data-tut="pos">🛒 1. Punto de Venta</button>
-          <button type="button" class="tut-mod-btn" data-tut="pedidos">🎂 2. Pedidos y WhatsApp</button>
-          <button type="button" class="tut-mod-btn" data-tut="inventario">🍰 3. Stock, Insumos y Mermas</button>
-          <button type="button" class="tut-mod-btn" data-tut="corte">📊 4. Gastos y Corte de Caja</button>
-          <button type="button" class="tut-mod-btn" data-tut="usuarios">🔐 5. Usuarios y PIN</button>
-        </div>
-
-        <!-- Contenido explicativo de cada módulo -->
-        <div class="tutorial-module-box" id="tutContent-pos">
-          <h3>🛒 Módulo 1: Punto de Venta (Caja Multi-Moneda)</h3>
-          <ul class="tut-list">
-            <li><strong>Precios Automáticos en 3 Monedas:</strong> Fijas tus precios base en <strong>Pesos (COP)</strong> y el sistema calcula al instante el equivalente en <strong>Dólares (USD)</strong> y <strong>Bolívares (Bs)</strong>.</li>
-            <li><strong>Cobro Rápido y Vuelto Inteligente:</strong> Puedes cobrar en Efectivo (COP, USD o Bs), Transferencia/QR, Punto o <strong>Pago Mixto</strong> (combinando varias monedas en una misma venta).</li>
-            <li><strong>Control de Gaveta para el Vuelto:</strong> Si un cliente paga con un billete de $20 USD y le das el vuelto en Pesos o Bolívares, eliges de qué gaveta salió el cambio para que tu arqueo nunca se descuadre.</li>
-          </ul>
-        </div>
-
-        <div class="tutorial-module-box hidden" id="tutContent-pedidos">
-          <h3>🎂 Módulo 2: Pedidos Personalizados y WhatsApp Automático</h3>
-          <ul class="tut-list">
-            <li><strong>Control de Abonos y Saldos:</strong> Registra encargos de tortas con fecha y hora de entrega, cuánto dejó de abono inicial y cuánto queda pendiente por cobrar.</li>
-            <li><strong>Aviso Automático por WhatsApp:</strong> Vincula tu WhatsApp escaneando el QR en el botón <strong>WhatsApp Auto</strong>. Cuando cambies un pedido a <strong>"🎁 Listo para Entregar"</strong>, el sistema le enviará automáticamente un mensaje al cliente informándole su saldo pendiente.</li>
-          </ul>
-        </div>
-
-        <div class="tutorial-module-box hidden" id="tutContent-inventario">
-          <h3>🍰 Módulo 3: Productos Terminados, Materia Prima y Caducidad</h3>
-          <ul class="tut-list">
-            <li><strong>Productos con Foto:</strong> En <em>Productos Terminados</em> puedes subir la foto real de cada postre, definir su stock actual, stock mínimo y fecha de vencimiento.</li>
-            <li><strong>Materia Prima / Insumos:</strong> Controla harina, azúcar, mantequilla, huevos y empaques por kilos, gramos o litros, descontando lo usado en cocina con el botón <strong>"- Usar"</strong>.</li>
-            <li><strong>Alertas Sonoras y Mermas:</strong> Cuando un producto o insumo está por agotarse o vencer, la barra superior emite una alerta visual y sonora. En <em>Caducidad y Mermas</em> registras bajas por vencimiento o daño.</li>
-          </ul>
-        </div>
-
-        <div class="tutorial-module-box hidden" id="tutContent-corte">
-          <h3>📊 Módulo 4: Gastos, Ingresos Extra y Entrega de Cuentas (Corte)</h3>
-          <ul class="tut-list">
-            <li><strong>Fondo Inicial, Gastos e Ingresos:</strong> Registra la base de efectivo con la que abres el turno y anota cualquier gasto (compra de hielo, gas, domicilio) indicando de qué moneda salió.</li>
-            <li><strong>Arqueo Ciego y Exacto:</strong> En <em>Entrega de Cuentas (Corte)</em> el sistema te muestra exactamente cuántos Pesos, Dólares y Bolívares debe haber en la gaveta. Ingresas el dinero físico contado y te dice al instante si la caja está <strong>Cuadrada</strong>, si <strong>Falta</strong> o si <strong>Sobra</strong> dinero.</li>
-          </ul>
-        </div>
-
-        <div class="tutorial-module-box hidden" id="tutContent-usuarios">
-          <h3>🔐 Módulo 5: Control de Usuarios y Roles por PIN</h3>
-          <ul class="tut-list">
-            <li><strong>3 Roles Incorporados:</strong> <strong>👑 Administrador</strong> (acceso total, PIN inicial <code>1234</code>), <strong>🧾 Cajera</strong> (ventas, pedidos y caja, PIN <code>1111</code>) y <strong>👩‍🍳 Repostero</strong> (cocina, stock y pedidos, PIN <code>2222</code>).</li>
-            <li><strong>Bitácora de Auditoría:</strong> Todas las ventas, gastos y cambios quedan registrados con el nombre del usuario que tenía el turno activo.</li>
-          </ul>
-        </div>
-
-        <div class="modal-footer" style="justify-content:space-between;">
-          <button type="button" class="btn btn-outline" id="btnOnbBackToStep1">⬅ Volver a Personalizar</button>
-          <button type="button" class="btn btn-primary btn-lg" id="btnOnbNextToStep3">Siguiente: Activar Prueba ➔</button>
-        </div>
-      </div>
-
-      <!-- PASO 3: ACTIVACIÓN DE 7 DÍAS DE PRUEBA Y MEMBRESÍA -->
-      <div id="onbStep3" class="onb-step-body hidden">
-        <div style="text-align:center; padding: 10px 6px;">
-          <div style="font-size: 48px; margin-bottom: 8px;">🎁</div>
-          <h2 style="color:var(--secondary); font-size:22px;">¡Todo listo! Tienes 7 Días de Prueba Gratis</h2>
-          <p class="subtitle" style="max-width:520px; margin:6px auto 16px;">
-            Tu sistema para <strong id="onbSummaryBrandName">Dulce Repostería</strong> ya está configurado y personalizado.
-          </p>
-
-          <div class="membership-info-card" style="text-align:left; background:var(--bg-muted); border:2px solid var(--primary); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <strong style="color:var(--secondary); font-size:15px;">💎 Plan Membresía Completa Repostería POS</strong>
-              <span class="status-badge entregado">7 Días Gratis Activos</span>
+        <div style="background:var(--bg-muted); border:1.5px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
+          <div class="form-row-inline">
+            <div class="form-group" style="flex:2;">
+              <label>1️⃣ Nombre de tu Postre o Pastel *</label>
+              <input type="text" id="onbProdName" value="Torta Especial de la Casa" placeholder="Ej. Marquesa de Chocolate, Porción Tres Leches..." />
             </div>
-            <p style="font-size:13px; color:var(--text-main); margin-bottom:8px;">
-              Disfruta de acceso ilimitado a Punto de Venta, Pedidos con WhatsApp, Inventario, Corte de Caja y Control de Usuarios durante tus <strong>7 días de prueba</strong>.
-            </p>
-            <div style="background:#fff; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:12.5px;">
-              💳 <strong>Valor de la suscripción al finalizar la prueba:</strong> <strong>$20.00 USD / mes</strong><br>
-              📲 <strong>Método de Pago:</strong> Pago Móvil en Bolívares calculado automáticamente a la <strong>Tasa Oficial del EURO (€) del BCV</strong>.
+            <div class="form-group" style="flex:1;">
+              <label>2️⃣ Categoría</label>
+              <select id="onbProdCategory">
+                <option value="Pasteles">🎂 Pasteles</option>
+                <option value="Porciones">🍰 Porciones</option>
+                <option value="Cupcakes">🧁 Cupcakes</option>
+                <option value="Galletas">🍪 Galletas</option>
+                <option value="Postres Fríos">🍮 Postres Fríos</option>
+                <option value="Bebidas">☕ Bebidas</option>
+              </select>
             </div>
+          </div>
+
+          <div class="form-row-inline">
+            <div class="form-group">
+              <label>3️⃣ Precio de Venta en Pesos (COP) *</label>
+              <input type="number" id="onbProdPriceCOP" value="15000" step="100" min="0" />
+            </div>
+            <div class="form-group">
+              <label>4️⃣ Cantidad Disponible Hoy (Stock)</label>
+              <input type="number" id="onbProdStock" value="12" min="1" />
+            </div>
+            <div class="form-group">
+              <label>5️⃣ Avisarme cuando queden menos de:</label>
+              <input type="number" id="onbProdMinStock" value="3" min="1" />
+            </div>
+          </div>
+
+          <div class="live-conversion-preview" id="onbProdConversionPreview" style="margin-bottom:0;">
+            ✨ <strong>Conversión automática en vitrina:</strong> Al cobrar este producto en caja, el sistema mostrará: <strong>$ 15.000 COP</strong> | <strong>$ 3.75 USD</strong> | <strong>214,29 Bs</strong>
           </div>
         </div>
 
         <div class="modal-footer" style="justify-content:space-between;">
-          <button type="button" class="btn btn-outline" id="btnOnbBackToStep2">⬅ Volver al Tutorial</button>
-          <button type="button" class="btn btn-success btn-lg" id="btnFinishOnboarding">
-            🚀 Comenzar mis 7 Días de Prueba Ahora
+          <button type="button" class="btn btn-outline" id="btnOnbBackToStep1">⬅ Volver a Datos del Negocio</button>
+          <button type="button" class="btn btn-primary btn-lg" id="btnOnbSaveFirstProduct">
+            💾 Guardar Producto y Pasar al Tour de Módulos ➔
           </button>
         </div>
       </div>
+
+      <!-- PASO 3: EXPLICACIÓN DETALLADA MÓDULO POR MÓDULO + TOUR PRÁCTICO EN VIVO -->
+      <div id="onbStep3" class="onb-step-body hidden">
+        <div style="text-align:center; margin-bottom:10px;">
+          <h2 style="color:var(--secondary); font-size:20px;">🧭 Paso 3: Guía Detallada Módulo por Módulo + 7 Días Gratis</h2>
+          <p class="subtitle">Revisa cómo funciona cada módulo o inicia el <strong>Recorrido Guiado Interactivo en Vivo</strong> sobre tu pantalla</p>
+        </div>
+
+        <div class="tutorial-modules-nav" id="tutorialModulesNav">
+          <button type="button" class="tut-mod-btn active" data-tut="pos">🛒 1. Caja / POS</button>
+          <button type="button" class="tut-mod-btn" data-tut="pedidos">🎂 2. Pedidos + WA</button>
+          <button type="button" class="tut-mod-btn" data-tut="inventario">🍰 3. Productos e Insumos</button>
+          <button type="button" class="tut-mod-btn" data-tut="corte">📊 4. Gastos y Corte</button>
+          <button type="button" class="tut-mod-btn" data-tut="usuarios">🔐 5. Usuarios y Membresía</button>
+        </div>
+
+        <!-- Contenido explicativo paso a paso de cada módulo -->
+        <div class="tutorial-module-box" id="tutContent-pos">
+          <h3>🛒 Cómo hacer una Venta en el Punto de Venta (Caja)</h3>
+          <ul class="tut-list">
+            <li><strong>Paso A (Elegir Productos):</strong> Toca cualquier postre del catálogo (incluyendo el que acabas de crear) para sumarlo a la <em>Orden Actual</em>.</li>
+            <li><strong>Paso B (Seleccionar Método y Moneda):</strong> Elige si el cliente paga en <strong>💵 Efectivo</strong> (Pesos, Dólares o Bolívares), <strong>📲 Transferencia/QR</strong>, <strong>💳 Punto</strong> o <strong>🔄 Pago Mixto</strong> (ej. mitad en dólares y mitad en bolívares).</li>
+            <li><strong>Paso C (Gaveta del Vuelto):</strong> Si te pagan con un billete grande, el sistema calcula el vuelto en las 3 monedas y te pregunta <strong>"¿De qué gaveta entregas el vuelto?"</strong> para descontarlo exactamente de esa moneda.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-pedidos">
+          <h3>🎂 Cómo agendar un Encargo y enviar WhatsApp Automático</h3>
+          <ul class="tut-list">
+            <li><strong>Paso A (Crear Pedido):</strong> En la pestaña <em>Pedidos y Encargos</em>, pulsa <strong>➕ Nuevo Pedido</strong>, selecciona el cliente, fecha/hora de entrega, descripción de la torta, precio total y cuánto dejó de <strong>Abono Inicial</strong>.</li>
+            <li><strong>Paso B (Vincular WhatsApp QR):</strong> Toca el botón superior <strong>WhatsApp Auto</strong> y escanea el código QR desde tu celular.</li>
+            <li><strong>Paso C (Aviso Automático al Cliente):</strong> Cuando el pastel esté terminado y cambies su estado a <strong>"🎁 Listo para Entregar"</strong>, el sistema le enviará el mensaje de WhatsApp automáticamente al cliente recordándole su saldo pendiente.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-inventario">
+          <h3>🍰 Cómo administrar Productos Terminados, Materia Prima y Mermas</h3>
+          <ul class="tut-list">
+            <li><strong>Productos Terminados:</strong> Usa <strong>➕ Nuevo Producto</strong> para subir fotos reales de tus postres, fijar precios en Pesos, stock mínimo y fecha de vencimiento. Usa <strong>+ Stock</strong> cada vez que salga una horneada nueva.</li>
+            <li><strong>Materia Prima / Insumos:</strong> Registra harina, azúcar, huevos, mantequilla y cajas por <code>kg</code>, <code>g</code>, <code>litros</code> o <code>unidades</code>. Cuando cocines, toca <strong>"- Usar"</strong> para descontar lo gastado.</li>
+            <li><strong>Caducidad y Mermas:</strong> Si un producto vence o se daña, regístralo en <em>Mermas</em> para descontarlo del inventario y llevar el control del costo perdido.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-corte">
+          <h3>📊 Cómo registrar Gastos y hacer la Entrega de Cuentas (Corte)</h3>
+          <ul class="tut-list">
+            <li><strong>Fondo Inicial y Gastos:</strong> Al empezar el día configura el <strong>🏦 Fondo Inicial</strong>. Si sacas dinero de caja para pagar insumos, hielo o domicilio, regístralo en <strong>➖ Registrar Gasto</strong> eligiendo en qué moneda se pagó.</li>
+            <li><strong>Arqueo Físico en 3 Monedas:</strong> Al cerrar el turno ve a <em>Entrega de Cuentas (Corte)</em>, cuenta los billetes reales que tienes en <strong>Pesos, Dólares y Bolívares</strong> y escríbelos en el arqueo. El sistema te dirá al instante si la caja está <strong>Cuadrada</strong>, si falta o si sobra dinero.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-usuarios">
+          <h3>🔐 Usuarios por PIN y Sistema de Membresía ($20)</h3>
+          <ul class="tut-list">
+            <li><strong>Perfiles y PINs iniciales:</strong> <strong>👑 Admin:</strong> <code>1234</code> | <strong>🧾 Cajera:</strong> <code>1111</code> | <strong>👩‍🍳 Repostero:</strong> <code>2222</code>. Puedes bloquear la pantalla o cambiar de cajero desde el menú lateral.</li>
+            <li><strong>🎁 7 Días de Prueba + Membresía ($20):</strong> Al finalizar este asistente tienes <strong>7 días de prueba gratis</strong>. Luego la suscripción es de <strong>$20 USD</strong> pagaderos por <strong>Pago Móvil (0105 | 04127049393 | 26862189)</strong> a tasa oficial <strong>Euro BCV</strong> validando los últimos dígitos de la referencia.</li>
+          </ul>
+        </div>
+
+        <div class="modal-footer" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <button type="button" class="btn btn-outline" id="btnOnbBackToStep2">⬅ Volver a Producto</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary" id="btnStartInteractiveTour">
+              🧭 Iniciar Tour Guiado en Vivo por la App
+            </button>
+            <button type="button" class="btn btn-success btn-lg" id="btnFinishOnboarding">
+              🚀 Activar 7 Días Gratis y Entrar Ya
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GUÍA INTERACTIVA PASO A PASO EN VIVO SOBRE LA PANTALLA REAL ==================== -->
+  <div class="interactive-tour-bar hidden no-print" id="interactiveTourBar">
+    <div class="itour-header">
+      <span class="itour-step-badge" id="itourStepBadge">Paso 1 de 7</span>
+      <strong id="itourTitle">🍰 Módulo de Productos Terminados</strong>
+      <button type="button" class="itour-close-btn" id="btnCloseInteractiveTour" title="Cerrar recorrido guiado">✕</button>
+    </div>
+    <p class="itour-desc" id="itourDescription">
+      Aquí ves todos tus postres a la venta. Puedes tocar el botón "➕ Nuevo Producto" para agregar más postres con foto o "+ Stock" cuando saques una nueva tanda del horno.
+    </p>
+    <div class="itour-actions">
+      <button type="button" class="btn btn-outline btn-sm" id="btnItourPrev">⬅ Anterior</button>
+      <button type="button" class="btn btn-outline btn-sm" id="btnItourTryAction" style="background:#fff; color:var(--primary); border-color:var(--primary);">
+        ✨ Probar Acción Ahora
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" id="btnItourNext">Siguiente Módulo ➔</button>
     </div>
   </div>
 
@@ -1902,7 +1954,10 @@
   <div class="modal-backdrop hidden no-print" id="modalMembership" style="z-index: 2050;">
     <div class="modal-card" style="max-width: 560px; border-top: 6px solid var(--primary);">
       <div class="modal-header">
-        <h3>💎 Mi Membresía y Pago Móvil ($20)</h3>
+        <div>
+          <h3>💎 Mi Membresía y Pago Móvil ($20)</h3>
+          <small style="color:var(--text-muted); font-size:11.5px;">ID de Instalación APK: <strong id="memLicenseIdDisplay" style="color:var(--primary);">REP-0000</strong></small>
+        </div>
         <button class="modal-close" id="btnCloseMembershipModal" data-close="modalMembership">✕</button>
       </div>
 
@@ -1987,14 +2042,19 @@
       <!-- Botón principal que lleva a la ventana de validación de referencia -->
       <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
         <button type="button" class="btn btn-success btn-block btn-lg" id="btnOpenValidatePaymentWindow">
-          ✅ Reportar Pago / Validar Referencia ➔
+          ✅ Pagar / Validar con Últimos Dígitos de Referencia ➔
         </button>
       </div>
 
       <div class="modal-footer" style="justify-content:space-between; margin-top:12px;">
-        <button type="button" class="btn-text" id="btnSimulateTrialExpired" style="font-size:11.5px; color:var(--text-muted);" title="Probar cómo se ve cuando vencen los 7 días">
-          🧪 Simular vencimiento de 7 días
-        </button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button type="button" class="btn-text" id="btnSimulateTrialExpired" style="font-size:11.5px; color:var(--text-muted);" title="Probar cómo se ve cuando vencen los 7 días">
+            🧪 Simular vencimiento 7d
+          </button>
+          <a href="admin.html" target="_blank" style="font-size:11.5px; font-weight:700; color:var(--primary); text-decoration:none;">
+            🛡️ Abrir Panel Admin de APKs
+          </a>
+        </div>
         <button type="button" class="btn btn-outline btn-sm" id="btnCloseMembershipFooter" data-close="modalMembership">Cerrar</button>
       </div>
     </div>
@@ -2002,42 +2062,61 @@
 
   <!-- ==================== MODAL 2: VENTANA PARA VALIDAR EL PAGO CON ÚLTIMOS DÍGITOS DE REFERENCIA ==================== -->
   <div class="modal-backdrop hidden no-print" id="modalValidatePayment" style="z-index: 2150;">
-    <div class="modal-card" style="max-width: 460px; border-top: 6px solid var(--success);">
+    <div class="modal-card" style="max-width: 470px; border-top: 6px solid var(--success);">
       <div class="modal-header">
-        <h3>🔐 Validar Pago Móvil</h3>
+        <div>
+          <h3>🔐 Validar Pago Móvil</h3>
+          <small style="color:var(--text-muted); font-size:11.5px;">ID de tu APK: <strong id="valModalLicenseId" style="color:var(--primary);">REP-0000</strong></small>
+        </div>
         <button class="modal-close" data-close="modalValidatePayment">✕</button>
       </div>
 
       <form id="formValidatePagoMovil">
         <div style="background:var(--bg-muted); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px; font-size:13px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span>Destino Pago Móvil:</span>
+            <span>Datos Pago Móvil:</span>
             <strong>0105 | 04127049393 | V-26862189</strong>
           </div>
           <div style="display:flex; justify-content:space-between;">
-            <span>Monto a Validar ($20 a Tasa Euro BCV):</span>
+            <span>Monto ($20 a Tasa Euro BCV):</span>
             <strong id="valModalAmountBs" style="color:var(--primary);">Bs. 0,00</strong>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="paymentRefDigitsInput" style="font-size:14px;">🔢 Ingresa los últimos dígitos de la Referencia *</label>
+          <label for="paymentRefDigitsInput" style="font-size:14px;">🔢 Últimos dígitos de la Referencia del Pago Móvil *</label>
           <input
             type="text"
             id="paymentRefDigitsInput"
             inputmode="numeric"
             pattern="[0-9]{4,12}"
             maxlength="12"
-            placeholder="Ej: 4829 (Últimos 4 a 6 dígitos)"
+            placeholder="Ej: 4829"
             required
-            style="font-size:20px; font-weight:800; text-align:center; letter-spacing:4px; padding:12px;"
+            style="font-size:20px; font-weight:800; text-align:center; letter-spacing:4px; padding:11px;"
           />
-          <small class="field-hint">Escribe los últimos dígitos del comprobante de tu Pago Móvil y pulsa Validar.</small>
+          <small class="field-hint">Ingresa los últimos 4 a 6 dígitos del comprobante bancario.</small>
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+          <label for="paymentUnlockPinInput" style="font-size:12.5px; color:var(--text-muted);">🔑 PIN de Activación del Administrador (Opcional si estás conectado al servidor)</label>
+          <input
+            type="text"
+            id="paymentUnlockPinInput"
+            inputmode="numeric"
+            maxlength="8"
+            placeholder="Si el administrador te dio un PIN por WhatsApp, escríbelo aquí"
+            style="font-size:14px; text-align:center; padding:8px;"
+          />
+        </div>
+
+        <div id="valModalPendingNotice" class="hidden" style="background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:10px; border-radius:8px; font-size:12.5px; margin-bottom:10px;">
+          ⏳ <strong>Referencia enviada al Panel de Administración.</strong> Esperando confirmación del administrador (se activará automáticamente en segundos apenas lo apruebe en el panel, o ingresa arriba el PIN de activación).
         </div>
 
         <div class="modal-footer" style="justify-content:space-between;">
           <button type="button" class="btn btn-outline" id="btnBackToMembershipModal">⬅ Volver a Datos</button>
-          <button type="submit" class="btn btn-success btn-lg">✅ Validar y Activar</button>
+          <button type="submit" class="btn btn-success btn-lg">✅ Validar Pago</button>
         </div>
       </form>
     </div>
@@ -2069,6 +2148,6 @@
 
   <div id="toastContainer" class="toast-container no-print"></div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

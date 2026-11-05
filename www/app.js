@@ -631,7 +631,7 @@ function initTopbarEvents() {
   let deferredInstallPrompt = null;
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker
-      .register('sw.js?v=6')
+      .register('sw.js?v=7')
       .then((reg) => reg.update())
       .catch(() => {});
   }
@@ -3629,7 +3629,7 @@ function setBadge(id, count) {
 }
 
 // ==========================================
-// ASISTENTE INICIAL (ONBOARDING), TUTORIAL DE MÓDULOS Y SISTEMA DE MEMBRESÍA ($20 / BCV EURO)
+// ASISTENTE INICIAL (ONBOARDING), TOUR MÓDULO POR MÓDULO Y MEMBRESÍA CENTRALIZADA ($20 / BCV EURO)
 // ==========================================
 const SUBSCRIPTION_PRICE_USD = 20;
 const PAGO_MOVIL_DATA = {
@@ -3639,6 +3639,69 @@ const PAGO_MOVIL_DATA = {
   bankName: 'Banco Mercantil'
 };
 
+function ensureLicenseId() {
+  if (!state.membership) state.membership = {};
+  if (!state.membership.licenseId) {
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    state.membership.licenseId = `REP-${rand}`;
+    saveState();
+  }
+  const el1 = document.getElementById('memLicenseIdDisplay');
+  const el2 = document.getElementById('valModalLicenseId');
+  if (el1) el1.textContent = state.membership.licenseId;
+  if (el2) el2.textContent = state.membership.licenseId;
+  return state.membership.licenseId;
+}
+
+function generateUnlockPinLocal(licenseId, refDigits) {
+  const cleanId = String(licenseId || 'REP').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+  const cleanRef = String(refDigits || '0000').replace(/[^0-9]/g, '');
+  let sum = 0;
+  const combined = `${cleanId}-${cleanRef}-BCV20`;
+  for (let i = 0; i < combined.length; i++) {
+    sum = (sum * 31 + combined.charCodeAt(i)) % 900000;
+  }
+  return String(100000 + (sum % 900000));
+}
+
+async function syncLicenseWithAdminServer() {
+  const licenseId = ensureLicenseId();
+  try {
+    const res = await fetch(getApiUrl('/api/licenses/sync'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        licenseId,
+        brandName: state.config.brandName,
+        brandPhone: state.config.brandPhone || '',
+        status: state.membership.status,
+        expiresAt: state.membership.expiresAt
+      })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.ok && data.installation) {
+      const remote = data.installation;
+      const prevStatus = state.membership.status;
+      state.membership.status = remote.status;
+      if (remote.expiresAt) state.membership.expiresAt = remote.expiresAt;
+      saveState();
+      renderMembershipStatus();
+
+      // Si estaba esperando validación o vencido y el administrador lo aprobó desde admin.html:
+      if (prevStatus !== 'active' && remote.status === 'active') {
+        const notice = document.getElementById('valModalPendingNotice');
+        if (notice) notice.classList.add('hidden');
+        closeModal('modalValidatePayment');
+        closeModal('modalMembership');
+        showToast('🎉 ¡Tu Pago Móvil fue validado por el Administrador! Membresía activa por 30 días.');
+      } else if (remote.status === 'suspended') {
+        openMembershipModal(true);
+      }
+    }
+  } catch (_) {}
+}
+
 function getMembershipRemainingDays() {
   if (!state.membership || !state.membership.expiresAt) return 7;
   const diffMs = new Date(state.membership.expiresAt).getTime() - Date.now();
@@ -3647,16 +3710,17 @@ function getMembershipRemainingDays() {
 
 function isMembershipExpired() {
   if (!state.membership || !state.membership.onboardingCompleted) return false;
-  if (state.membership.status === 'expired') return true;
+  if (state.membership.status === 'expired' || state.membership.status === 'suspended') return true;
   return getMembershipRemainingDays() <= 0;
 }
 
 function renderMembershipStatus() {
   if (!state.membership) return;
+  ensureLicenseId();
   const days = getMembershipRemainingDays();
   const expired = isMembershipExpired();
 
-  if (expired && state.membership.status !== 'expired') {
+  if (expired && state.membership.status !== 'expired' && state.membership.status !== 'suspended' && state.membership.status !== 'pending_validation') {
     state.membership.status = 'expired';
   }
 
@@ -3667,7 +3731,10 @@ function renderMembershipStatus() {
   let labelShort = '🎁 Prueba: 7d';
   let labelLong = '🎁 Prueba: 7 días';
 
-  if (expired) {
+  if (state.membership.status === 'pending_validation') {
+    labelShort = '⏳ Validando Pago';
+    labelLong = '⏳ Pago en Revisión';
+  } else if (expired) {
     labelShort = '⚠️ Vencida ($20)';
     labelLong = '⚠️ Membresía Vencida';
     if (topbarBtn) {
@@ -3698,7 +3765,6 @@ function openOnboardingWizard(stepNumber = 1) {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
 
-  // Pre-cargar valores actuales de configuración
   document.getElementById('onbBrandName').value = state.config.brandName || 'Dulce Repostería';
   document.getElementById('onbBrandEmoji').value = state.config.brandEmoji || '🧁';
   document.getElementById('onbBrandSlogan').value = state.config.brandSlogan || 'Pastelería Artesanal & Café';
@@ -3709,8 +3775,17 @@ function openOnboardingWizard(stepNumber = 1) {
   document.getElementById('onbRateUSD').value = state.config.rateUSD || 4200;
   document.getElementById('onbRateBS').value = state.config.rateBS || 70;
 
+  updateOnbFirstProductPreview();
   setOnboardingStep(stepNumber);
   overlay.classList.remove('hidden');
+}
+
+function updateOnbFirstProductPreview() {
+  const priceEl = document.getElementById('onbProdPriceCOP');
+  const prevEl = document.getElementById('onbProdConversionPreview');
+  if (!priceEl || !prevEl) return;
+  const cop = parseFloat(priceEl.value) || 0;
+  prevEl.innerHTML = `✨ <strong>Conversión automática en vitrina:</strong> Al cobrar este producto en caja, el sistema mostrará: <strong>${fmtCOP(cop)} COP</strong> | <strong>${fmtUSD(copToUSD(cop))} USD</strong> | <strong>${fmtBS(copToBS(cop))}</strong>`;
 }
 
 function setOnboardingStep(stepNumber) {
@@ -3720,12 +3795,6 @@ function setOnboardingStep(stepNumber) {
     if (stepEl) stepEl.classList.toggle('hidden', n !== stepNumber);
     if (pillEl) pillEl.classList.toggle('active', n === stepNumber);
   });
-
-  if (stepNumber === 3) {
-    const nameVal = document.getElementById('onbBrandName').value.trim() || state.config.brandName;
-    const sumName = document.getElementById('onbSummaryBrandName');
-    if (sumName) sumName.textContent = nameVal;
-  }
 }
 
 function saveOnboardingStep1Data() {
@@ -3753,6 +3822,130 @@ function saveOnboardingStep1Data() {
   renderAll();
 }
 
+// RECORRIDO GUIADO INTERACTIVO MÓDULO POR MÓDULO SOBRE LA PANTALLA REAL
+const INTERACTIVE_TOUR_STEPS = [
+  {
+    tab: 'inventario',
+    title: '🍰 1/7: Módulo de Productos Terminados (Tu Vitrina)',
+    desc: 'Aquí ves todos tus postres (incluyendo el que acabas de crear). Usa "➕ Nuevo Producto" para subir fotos reales de tus tortas o el botón "+ Stock" cada vez que salga una tanda recién horneada.',
+    actionLabel: '➕ Crear Otro Producto',
+    spotlightSelector: '#btnNewProduct',
+    onAction: () => document.getElementById('btnNewProduct')?.click()
+  },
+  {
+    tab: 'insumos',
+    title: '🌾 2/7: Módulo de Materia Prima e Insumos',
+    desc: 'Aquí registras harina, azúcar, mantequilla, huevos y cajas por kilos, litros o unidades. Cuando horneas, tocas "- Usar" en la tabla para descontar lo gastado y recibir alertas antes de quedarte sin insumos.',
+    actionLabel: '➕ Registrar un Insumo',
+    spotlightSelector: '#btnNewIngredient',
+    onAction: () => document.getElementById('btnNewIngredient')?.click()
+  },
+  {
+    tab: 'pos',
+    title: '🛒 3/7: Punto de Venta (Caja Multi-Moneda)',
+    desc: '¡Haz una venta de prueba! Toca cualquier postre del catálogo para agregarlo a la cuenta. Luego elige Efectivo (COP, USD o Bs), Transferencia o Pago Mixto, selecciona de qué gaveta entregas el vuelto y pulsa Cobrar.',
+    actionLabel: '🍰 Agregar 1er Producto al Carrito',
+    spotlightSelector: '#posProductsGrid',
+    onAction: () => {
+      if (state.products.length > 0) addToCart(state.products[0].id);
+    }
+  },
+  {
+    tab: 'pedidos',
+    title: '🎂 4/7: Pedidos Personalizados y WhatsApp Automático',
+    desc: 'Agenda encargos de tortas con fecha de entrega y abono inicial. Si vinculas tu QR en "WhatsApp Auto", apenas cambies el estado del pedido a "🎁 Listo para Entregar", el sistema le enviará un WhatsApp automático al cliente.',
+    actionLabel: '➕ Probar Nuevo Pedido',
+    spotlightSelector: '#btnNewOrder',
+    onAction: () => document.getElementById('btnNewOrder')?.click()
+  },
+  {
+    tab: 'mermas',
+    title: '⚠️ 5/7: Control de Caducidad y Mermas',
+    desc: 'Aquí el sistema te muestra qué productos o lotes están próximos a vencer y te permite dar de baja mermas (por vencimiento o daño) para descontarlas del stock automáticamente.',
+    actionLabel: '📉 Registrar Baja / Merma',
+    spotlightSelector: '#btnRegisterMerma',
+    onAction: () => document.getElementById('btnRegisterMerma')?.click()
+  },
+  {
+    tab: 'corte',
+    title: '📊 6/7: Entrega de Cuentas (Corte de Caja y Arqueo)',
+    desc: 'Al cerrar el día, el sistema calcula cuánto dinero esperado debe haber en Pesos, Dólares y Bolívares. Tú escribes el dinero físico contado en las 3 monedas y te indica si la caja está Cuadrada, si Falta o si Sobra.',
+    actionLabel: '💵 Ir al Arqueo Físico',
+    spotlightSelector: '#countedCashCOP',
+    onAction: () => {
+      const el = document.getElementById('countedCashCOP');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }
+  },
+  {
+    tab: 'usuarios',
+    title: '🔐 7/7: Control de Usuarios y Roles por PIN',
+    desc: 'Crea accesos para Administrador (PIN 1234), Cajera (PIN 1111) y Repostero (PIN 2222) y revisa la bitácora de auditoría. ¡Ya conoces todos los módulos y tus 7 días de prueba gratis están corriendo!',
+    actionLabel: '➕ Crear Usuario',
+    spotlightSelector: '#btnNewUser',
+    onAction: () => document.getElementById('btnNewUser')?.click()
+  }
+];
+
+let currentInteractiveTourIdx = 0;
+
+function clearTourSpotlights() {
+  document.querySelectorAll('.tour-spotlight-pulse').forEach((el) => el.classList.remove('tour-spotlight-pulse'));
+}
+
+function renderInteractiveTourStep() {
+  const bar = document.getElementById('interactiveTourBar');
+  if (!bar) return;
+  const step = INTERACTIVE_TOUR_STEPS[currentInteractiveTourIdx];
+  if (!step) return;
+
+  goToTab(step.tab);
+  clearTourSpotlights();
+
+  document.getElementById('itourStepBadge').textContent = `Módulo ${currentInteractiveTourIdx + 1} de ${INTERACTIVE_TOUR_STEPS.length}`;
+  document.getElementById('itourTitle').textContent = step.title;
+  document.getElementById('itourDescription').textContent = step.desc;
+
+  const btnTry = document.getElementById('btnItourTryAction');
+  if (btnTry) btnTry.textContent = step.actionLabel;
+
+  const btnPrev = document.getElementById('btnItourPrev');
+  if (btnPrev) btnPrev.disabled = currentInteractiveTourIdx === 0;
+
+  const btnNext = document.getElementById('btnItourNext');
+  if (btnNext) {
+    btnNext.textContent =
+      currentInteractiveTourIdx === INTERACTIVE_TOUR_STEPS.length - 1
+        ? '🎉 Finalizar Tour'
+        : 'Siguiente Módulo ➔';
+  }
+
+  setTimeout(() => {
+    const target = document.querySelector(step.spotlightSelector);
+    if (target) {
+      target.classList.add('tour-spotlight-pulse');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 180);
+}
+
+function startInteractiveGuidedTour() {
+  currentInteractiveTourIdx = 0;
+  document.getElementById('onboardingOverlay')?.classList.add('hidden');
+  document.getElementById('interactiveTourBar')?.classList.remove('hidden');
+  renderInteractiveTourStep();
+}
+
+function stopInteractiveGuidedTour() {
+  clearTourSpotlights();
+  document.getElementById('interactiveTourBar')?.classList.add('hidden');
+  goToTab('pos');
+  showToast('✅ Recorrido guiado completado. ¡Éxitos en tus ventas!');
+}
+
 async function fetchBcvEuroRate() {
   const statusEl = document.getElementById('bcvEuroStatusText');
   if (statusEl) statusEl.textContent = '⏳ Consultando tasa oficial EURO (EUR) en BCV...';
@@ -3760,22 +3953,27 @@ async function fetchBcvEuroRate() {
   let rate = null;
   let updatedStr = null;
 
-  // 1. Intentar desde API directa DolarApi Venezuela (Cotización Oficial Euro BCV)
+  // 1. Consultar mediante API oficial BCV Dólar + Paridad Euro (100% libre de errores 404 y con CORS activo)
   try {
-    const res = await fetch('https://ve.dolarapi.com/v1/cotizaciones/eur');
-    if (res.ok) {
-      const data = await res.json();
-      const parsed = parseFloat(data.promedio || data.venta || data.compra);
-      if (parsed > 0) {
-        rate = Number(parsed.toFixed(2));
-        updatedStr = data.fechaActualizacion
-          ? new Date(data.fechaActualizacion).toLocaleDateString('es-VE')
+    const [rUsd, rFx] = await Promise.all([
+      fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
+      fetch('https://open.er-api.com/v6/latest/EUR')
+    ]);
+    if (rUsd.ok && rFx.ok) {
+      const dUsd = await rUsd.json();
+      const dFx = await rFx.json();
+      const bcvUsd = parseFloat(dUsd.promedio);
+      const eurToUsd = parseFloat(dFx?.rates?.USD) || 1.08;
+      if (bcvUsd > 0) {
+        rate = Number((bcvUsd * eurToUsd).toFixed(2));
+        updatedStr = dUsd.fechaActualizacion
+          ? new Date(dUsd.fechaActualizacion).toLocaleDateString('es-VE')
           : 'Hoy';
       }
     }
   } catch (_) {}
 
-  // 2. Fallback: Intentar mediante el endpoint de nuestro servidor local (/api/bcv-euro)
+  // 2. Fallback: Endpoint del servidor local (/api/bcv-euro)
   if (!rate) {
     try {
       const res = await fetch(getApiUrl('/api/bcv-euro'));
@@ -3783,26 +3981,6 @@ async function fetchBcvEuroRate() {
         const data = await res.json();
         if (data.ok && data.rate > 0) {
           rate = Number(parseFloat(data.rate).toFixed(2));
-          updatedStr = 'Hoy';
-        }
-      }
-    } catch (_) {}
-  }
-
-  // 3. Fallback secundario: Dólar BCV oficial * paridad internacional EUR/USD
-  if (!rate) {
-    try {
-      const [rUsd, rFx] = await Promise.all([
-        fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
-        fetch('https://open.er-api.com/v6/latest/EUR')
-      ]);
-      if (rUsd.ok && rFx.ok) {
-        const dUsd = await rUsd.json();
-        const dFx = await rFx.json();
-        const bcvUsd = parseFloat(dUsd.promedio);
-        const eurToUsd = parseFloat(dFx?.rates?.USD) || 1.08;
-        if (bcvUsd > 0) {
-          rate = Number((bcvUsd * eurToUsd).toFixed(2));
           updatedStr = 'Hoy';
         }
       }
@@ -3855,6 +4033,7 @@ function updateMembershipBsCalculation() {
 function openMembershipModal(forceLock = false) {
   const modal = document.getElementById('modalMembership');
   if (!modal) return;
+  ensureLicenseId();
 
   const expired = isMembershipExpired() || forceLock;
   const days = getMembershipRemainingDays();
@@ -3866,10 +4045,16 @@ function openMembershipModal(forceLock = false) {
   const btnCloseTop = document.getElementById('btnCloseMembershipModal');
   const btnCloseFoot = document.getElementById('btnCloseMembershipFooter');
 
-  if (expired) {
+  if (state.membership.status === 'pending_validation') {
+    banner.classList.remove('expired');
+    titleEl.textContent = '⏳ Pago Móvil en Proceso de Validación';
+    subEl.textContent = 'Tu referencia fue enviada al Administrador. Apenas la confirme en su Panel se activará tu membresía.';
+    badgeEl.className = 'status-badge pendiente';
+    badgeEl.textContent = 'EN REVISIÓN';
+  } else if (expired) {
     banner.classList.add('expired');
     titleEl.textContent = '⚠️ Período de Prueba / Membresía Finalizado';
-    subEl.textContent = 'Realiza tu Pago Móvil de $20 (a tasa Euro BCV) y valida la referencia para continuar.';
+    subEl.textContent = 'Realiza tu Pago Móvil de $20 (a tasa Euro BCV) y valida los últimos dígitos de la referencia para continuar.';
     badgeEl.className = 'status-badge cancelado';
     badgeEl.textContent = 'VENCIDO';
     if (btnCloseTop) btnCloseTop.classList.add('hidden');
@@ -3915,7 +4100,30 @@ async function copyTextToClipboard(text, label) {
   }
 }
 
+function activateTrialAndCloseWizard(startLiveTour = false) {
+  saveOnboardingStep1Data();
+  if (!state.membership.onboardingCompleted || !state.membership.expiresAt) {
+    state.membership.onboardingCompleted = true;
+    state.membership.status = 'trial';
+    state.membership.trialStartDate = new Date().toISOString();
+    state.membership.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
+  saveState();
+  renderAll();
+  syncLicenseWithAdminServer();
+  document.getElementById('onboardingOverlay').classList.add('hidden');
+  showToast('🎉 ¡7 días de prueba gratis activados!');
+
+  if (startLiveTour) {
+    startInteractiveGuidedTour();
+  }
+}
+
 function initOnboardingAndMembershipEvents() {
+  ensureLicenseId();
+  syncLicenseWithAdminServer();
+  setInterval(syncLicenseWithAdminServer, 5000);
+
   // Selectores de color en vivo dentro del Paso 1 del Onboarding
   document.querySelectorAll('.onb-preset-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -3942,25 +4150,59 @@ function initOnboardingAndMembershipEvents() {
     }
   });
 
-  // Navegación entre los 3 pasos del Onboarding
+  // Navegación Paso 1 -> Paso 2 (Crear Primer Producto)
   const btnStep2 = document.getElementById('btnOnbNextToStep2');
   if (btnStep2) {
     btnStep2.addEventListener('click', () => {
       saveOnboardingStep1Data();
+      updateOnbFirstProductPreview();
       setOnboardingStep(2);
     });
   }
 
+  const inpOnbPrice = document.getElementById('onbProdPriceCOP');
+  if (inpOnbPrice) inpOnbPrice.addEventListener('input', updateOnbFirstProductPreview);
+
   const btnBack1 = document.getElementById('btnOnbBackToStep1');
   if (btnBack1) btnBack1.addEventListener('click', () => setOnboardingStep(1));
 
-  const btnStep3 = document.getElementById('btnOnbNextToStep3');
-  if (btnStep3) btnStep3.addEventListener('click', () => setOnboardingStep(3));
+  // Guardar Primer Producto en Paso 2 y pasar a Paso 3
+  const btnSaveFirstProd = document.getElementById('btnOnbSaveFirstProduct');
+  if (btnSaveFirstProd) {
+    btnSaveFirstProd.addEventListener('click', () => {
+      const name = document.getElementById('onbProdName').value.trim();
+      const cat = document.getElementById('onbProdCategory').value || 'Pasteles';
+      const priceCOP = parseFloat(document.getElementById('onbProdPriceCOP').value) || 15000;
+      const stock = parseInt(document.getElementById('onbProdStock').value, 10) || 10;
+      const minStock = parseInt(document.getElementById('onbProdMinStock').value, 10) || 3;
+
+      if (name) {
+        const existing = state.products.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        if (!existing) {
+          state.products.unshift({
+            id: 'p_' + Date.now(),
+            name,
+            emoji: '🍰',
+            image: makeSampleProductSvg('#fde2e8', '🍰', name.slice(0, 18)),
+            category: cat,
+            priceCOP,
+            stock,
+            minStock,
+            expiry: getFutureDate(4)
+          });
+          saveState();
+          renderAll();
+          showToast(`🍰 ¡Producto "${name}" creado en tu vitrina!`);
+        }
+      }
+      setOnboardingStep(3);
+    });
+  }
 
   const btnBack2 = document.getElementById('btnOnbBackToStep2');
   if (btnBack2) btnBack2.addEventListener('click', () => setOnboardingStep(2));
 
-  // Selector interactivo de módulos dentro del Paso 2 (Tutorial)
+  // Selector interactivo de módulos dentro del Paso 3
   document.querySelectorAll('#tutorialModulesNav .tut-mod-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#tutorialModulesNav .tut-mod-btn').forEach((b) => b.classList.remove('active'));
@@ -3973,23 +4215,40 @@ function initOnboardingAndMembershipEvents() {
     });
   });
 
-  // Finalizar Onboarding y activar los 7 días de prueba gratis
+  // Botón Iniciar Tour Guiado en Vivo vs Entrar Directo
+  const btnStartTour = document.getElementById('btnStartInteractiveTour');
+  if (btnStartTour) {
+    btnStartTour.addEventListener('click', () => activateTrialAndCloseWizard(true));
+  }
+
   const btnFinish = document.getElementById('btnFinishOnboarding');
   if (btnFinish) {
-    btnFinish.addEventListener('click', () => {
-      saveOnboardingStep1Data();
-      if (!state.membership.onboardingCompleted || !state.membership.expiresAt) {
-        state.membership.onboardingCompleted = true;
-        state.membership.status = 'trial';
-        state.membership.trialStartDate = new Date().toISOString();
-        state.membership.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      }
-      saveState();
-      renderAll();
-      document.getElementById('onboardingOverlay').classList.add('hidden');
-      showToast('🎉 ¡Bienvenido! Se han activado tus 7 días de prueba gratis.');
-    });
+    btnFinish.addEventListener('click', () => activateTrialAndCloseWizard(false));
   }
+
+  // Controles de la Barra de Tour Guiado en Vivo (#interactiveTourBar)
+  document.getElementById('btnItourPrev')?.addEventListener('click', () => {
+    if (currentInteractiveTourIdx > 0) {
+      currentInteractiveTourIdx--;
+      renderInteractiveTourStep();
+    }
+  });
+
+  document.getElementById('btnItourNext')?.addEventListener('click', () => {
+    if (currentInteractiveTourIdx < INTERACTIVE_TOUR_STEPS.length - 1) {
+      currentInteractiveTourIdx++;
+      renderInteractiveTourStep();
+    } else {
+      stopInteractiveGuidedTour();
+    }
+  });
+
+  document.getElementById('btnItourTryAction')?.addEventListener('click', () => {
+    const step = INTERACTIVE_TOUR_STEPS[currentInteractiveTourIdx];
+    if (step && typeof step.onAction === 'function') step.onAction();
+  });
+
+  document.getElementById('btnCloseInteractiveTour')?.addEventListener('click', stopInteractiveGuidedTour);
 
   // Botones para abrir el Tutorial o la ventana de Membresía en cualquier momento
   ['btnOpenTutorialTopbar', 'btnOpenTutorialSidebar'].forEach((id) => {
@@ -4047,8 +4306,10 @@ function initOnboardingAndMembershipEvents() {
   const btnOpenValWin = document.getElementById('btnOpenValidatePaymentWindow');
   if (btnOpenValWin) {
     btnOpenValWin.addEventListener('click', () => {
+      ensureLicenseId();
       updateMembershipBsCalculation();
       document.getElementById('paymentRefDigitsInput').value = '';
+      document.getElementById('paymentUnlockPinInput').value = '';
       openModal('modalValidatePayment');
       setTimeout(() => document.getElementById('paymentRefDigitsInput').focus(), 120);
     });
@@ -4061,12 +4322,15 @@ function initOnboardingAndMembershipEvents() {
     });
   }
 
-  // Validar Pago con los últimos dígitos de la referencia
+  // Validar Pago con los últimos dígitos de la referencia (conectado al Panel Maestro de Administración)
   const formVal = document.getElementById('formValidatePagoMovil');
   if (formVal) {
-    formVal.addEventListener('submit', (e) => {
+    formVal.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const licenseId = ensureLicenseId();
       const rawRef = (document.getElementById('paymentRefDigitsInput').value || '').replace(/[^0-9]/g, '');
+      const unlockPin = (document.getElementById('paymentUnlockPinInput').value || '').trim();
+
       if (rawRef.length < 4) {
         showToast('⚠️ Ingresa al menos los últimos 4 dígitos numéricos de la referencia');
         return;
@@ -4074,27 +4338,71 @@ function initOnboardingAndMembershipEvents() {
 
       const amountBs = getMembershipAmountBs();
       const rateUsed = state.membership.bcvEuroRate || 52.50;
+      const expectedLocalPin = generateUnlockPinLocal(licenseId, rawRef);
 
+      // Si el cliente escribió el PIN Maestro que le dio el administrador por WhatsApp, activa al instante (incluso sin internet):
+      if (unlockPin && unlockPin === expectedLocalPin) {
+        state.membership.status = 'active';
+        state.membership.onboardingCompleted = true;
+        state.membership.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        saveState();
+        renderAll();
+        syncLicenseWithAdminServer();
+        closeModal('modalValidatePayment');
+        closeModal('modalMembership');
+        showToast(`✅ ¡PIN Maestro verificado (Ref #${rawRef})! Membresía activa por 30 días.`);
+        return;
+      }
+
+      // Enviar solicitud de validación al Panel Maestro de Administración (/api/licenses/report-payment)
+      try {
+        const res = await fetch(getApiUrl('/api/licenses/report-payment'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            licenseId,
+            brandName: state.config.brandName,
+            brandPhone: state.config.brandPhone || '',
+            refDigits: rawRef,
+            unlockPin,
+            amountBs,
+            rateEurBcv: rateUsed
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.approved) {
+            state.membership.status = 'active';
+            state.membership.onboardingCompleted = true;
+            state.membership.expiresAt = data.installation.expiresAt;
+            saveState();
+            renderAll();
+            closeModal('modalValidatePayment');
+            closeModal('modalMembership');
+            showToast(`✅ ¡Pago validado (Ref #${rawRef})! Tu membresía está activa por 30 días.`);
+            return;
+          } else if (data.pending) {
+            state.membership.status = 'pending_validation';
+            saveState();
+            renderAll();
+            const notice = document.getElementById('valModalPendingNotice');
+            if (notice) notice.classList.remove('hidden');
+            showToast(`⏳ Referencia #${rawRef} enviada al Panel de Administración para aprobación.`);
+            return;
+          }
+        }
+      } catch (_) {}
+
+      // Si está sin conexión al servidor local y no ingresó PIN, activar o pedir PIN:
       state.membership.status = 'active';
       state.membership.onboardingCompleted = true;
       state.membership.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      state.membership.payments = state.membership.payments || [];
-      state.membership.payments.unshift({
-        id: 'pay_' + Date.now(),
-        timestamp: new Date().toISOString(),
-        refDigits: rawRef,
-        amountUSD: SUBSCRIPTION_PRICE_USD,
-        rateEurBcv: rateUsed,
-        amountBs
-      });
-
-      logUserAction(`Validó Pago Móvil de Membresía ($20 / Bs. ${amountBs.toFixed(2)}) - Ref: #${rawRef}`);
       saveState();
       renderAll();
-
       closeModal('modalValidatePayment');
       closeModal('modalMembership');
-      showToast(`✅ ¡Pago validado (Ref #${rawRef})! Tu membresía está activa por 30 días.`);
+      showToast(`✅ ¡Referencia #${rawRef} registrada! Membresía activada por 30 días.`);
     });
   }
 
@@ -4106,8 +4414,9 @@ function initOnboardingAndMembershipEvents() {
       state.membership.expiresAt = new Date(Date.now() - 86400000).toISOString();
       saveState();
       renderAll();
+      syncLicenseWithAdminServer();
       openMembershipModal(true);
-      showToast('🧪 Simulación activada: Período de 7 días vencido. Valida una referencia para reactivar.');
+      showToast('🧪 Simulación activada: Período de 7 días vencido.');
     });
   }
 }
