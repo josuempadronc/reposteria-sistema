@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Sistema POS, Pedidos, Inventario y Caja - Repostería</title>
-  <link rel="manifest" href="manifest.json?v=5" />
+  <link rel="manifest" href="manifest.json?v=6" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=6" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -91,6 +91,20 @@
             🔒 Cambiar Usuario / Bloquear
           </button>
         </div>
+        <div class="user-session-card" id="sidebarMembershipCard" style="margin-top:8px; background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.25);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <strong id="sidebarMembershipBadge" style="font-size:12px; color:#fde68a;">🎁 Prueba: 7 días</strong>
+            <span style="font-size:11px; opacity:0.85;">$20/mes</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn-switch-user" id="btnOpenMembershipSidebar" style="flex:1; background:var(--primary); border:none;">
+              💎 Membresía
+            </button>
+            <button type="button" class="btn-switch-user" id="btnOpenTutorialSidebar" style="flex:1;">
+              🎓 Tutorial
+            </button>
+          </div>
+        </div>
         <div class="cash-status-card" id="sidebarCashStatus" style="margin-top:8px;">
           <div class="status-row">
             <span class="status-dot open" id="cashStatusDot"></span>
@@ -150,6 +164,12 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" id="btnOpenMembershipTopbar" title="Estado de Membresía, Prueba de 7 días y Pago Móvil BCV">
+            💎 <span id="topbarMembershipText">Membresía (7d)</span>
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnOpenTutorialTopbar" title="Abrir Asistente Inicial de Personalización y Tutorial de Módulos">
+            🎓 Tutorial y Guía
+          </button>
           <button class="btn btn-alert-bell btn-sm" id="btnOpenCriticalAlerts" title="Ver centro de alertas urgentes de inventario y pedidos">
             🚨 Alertas <span class="alert-bell-count" id="topbarAlertCount">0</span>
           </button>
@@ -1687,6 +1707,342 @@
     </div>
   </div>
 
+  <!-- ==================== ASISTENTE INICIAL DE BIENVENIDA, PERSONALIZACIÓN Y TUTORIAL COMPLETO ==================== -->
+  <div class="modal-backdrop hidden no-print" id="onboardingOverlay" style="z-index: 2100; background: rgba(32, 18, 12, 0.85); backdrop-filter: blur(5px);">
+    <div class="modal-card onboarding-wizard-card" style="max-width: 760px;">
+      <!-- Cabecera de Pasos -->
+      <div class="onb-steps-header">
+        <div class="onb-step-pill active" id="onbStepIndicator1">1. 🎨 Personalizar App</div>
+        <div class="onb-step-pill" id="onbStepIndicator2">2. 📚 Tutorial de Módulos</div>
+        <div class="onb-step-pill" id="onbStepIndicator3">3. 🎁 Activar 7 Días Gratis</div>
+      </div>
+
+      <!-- PASO 1: DATOS DEL NEGOCIO, COLORES Y TASAS -->
+      <div id="onbStep1" class="onb-step-body">
+        <div style="text-align:center; margin-bottom:14px;">
+          <h2 style="color:var(--secondary); font-size:21px;">👋 ¡Bienvenido! Configura tu Repostería</h2>
+          <p class="subtitle">Personaliza el nombre, colores y tasas de tu negocio antes de comenzar</p>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group" style="flex:2;">
+            <label>🧁 Nombre de tu Repostería o Negocio *</label>
+            <input type="text" id="onbBrandName" placeholder="Ej. Dulce Repostería Artesanal" required />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>✨ Emoji o Ícono</label>
+            <input type="text" id="onbBrandEmoji" value="🧁" maxlength="4" />
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>💬 Eslogan o Especialidad</label>
+            <input type="text" id="onbBrandSlogan" placeholder="Ej. Pastelería, Postres y Café" />
+          </div>
+          <div class="form-group">
+            <label>📱 WhatsApp / Teléfono del Negocio</label>
+            <input type="text" id="onbBrandPhone" placeholder="Ej. +58 412 0000000" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🎨 Elige el Tema de Colores de tu Aplicación (Se aplica en vivo):</label>
+          <div class="palette-presets-grid" style="margin-top:6px;">
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#c84b6b" data-s="#5c3d2e" data-b="#fdfaf7">
+              <span class="swatch-pair"><i style="background:#c84b6b"></i><i style="background:#5c3d2e"></i></span>
+              Rosa Pastel
+            </button>
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#b45309" data-s="#3e2723" data-b="#fffbeb">
+              <span class="swatch-pair"><i style="background:#b45309"></i><i style="background:#3e2723"></i></span>
+              Chocolate & Miel
+            </button>
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#0d9488" data-s="#134e4a" data-b="#f0fdfa">
+              <span class="swatch-pair"><i style="background:#0d9488"></i><i style="background:#134e4a"></i></span>
+              Menta Fresca
+            </button>
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#7c3aed" data-s="#2e1065" data-b="#faf5ff">
+              <span class="swatch-pair"><i style="background:#7c3aed"></i><i style="background:#2e1065"></i></span>
+              Lavanda Dulce
+            </button>
+          </div>
+          <div class="form-row-inline" style="margin-top:10px;">
+            <div class="form-group">
+              <label>Color Botones</label>
+              <input type="color" id="onbColorPrimary" value="#c84b6b" style="height:38px; padding:3px;" />
+            </div>
+            <div class="form-group">
+              <label>Color Menú / Barra</label>
+              <input type="color" id="onbColorSecondary" value="#5c3d2e" style="height:38px; padding:3px;" />
+            </div>
+            <div class="form-group">
+              <label>Color Fondo</label>
+              <input type="color" id="onbColorBg" value="#fdfaf7" style="height:38px; padding:3px;" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group">
+            <label>🇺🇸 Tasa Inicial Dólar (COP por 1 USD)</label>
+            <input type="number" id="onbRateUSD" step="any" min="1" value="4000" />
+          </div>
+          <div class="form-group">
+            <label>🇻🇪 Tasa Inicial Bolívar (COP por 1 Bs)</label>
+            <input type="number" id="onbRateBS" step="any" min="0.01" value="70" />
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-primary btn-lg" id="btnOnbNextToStep2">
+            Guardar Datos y Ver Tutorial de Uso ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 2: TUTORIAL INTERACTIVO DE CADA MÓDULO -->
+      <div id="onbStep2" class="onb-step-body hidden">
+        <div style="text-align:center; margin-bottom:12px;">
+          <h2 style="color:var(--secondary); font-size:20px;">📚 Cómo Utilizar cada Módulo de tu Sistema</h2>
+          <p class="subtitle">Toca cada módulo para conocer cómo sacarle el máximo provecho</p>
+        </div>
+
+        <div class="tutorial-modules-nav" id="tutorialModulesNav">
+          <button type="button" class="tut-mod-btn active" data-tut="pos">🛒 1. Punto de Venta</button>
+          <button type="button" class="tut-mod-btn" data-tut="pedidos">🎂 2. Pedidos y WhatsApp</button>
+          <button type="button" class="tut-mod-btn" data-tut="inventario">🍰 3. Stock, Insumos y Mermas</button>
+          <button type="button" class="tut-mod-btn" data-tut="corte">📊 4. Gastos y Corte de Caja</button>
+          <button type="button" class="tut-mod-btn" data-tut="usuarios">🔐 5. Usuarios y PIN</button>
+        </div>
+
+        <!-- Contenido explicativo de cada módulo -->
+        <div class="tutorial-module-box" id="tutContent-pos">
+          <h3>🛒 Módulo 1: Punto de Venta (Caja Multi-Moneda)</h3>
+          <ul class="tut-list">
+            <li><strong>Precios Automáticos en 3 Monedas:</strong> Fijas tus precios base en <strong>Pesos (COP)</strong> y el sistema calcula al instante el equivalente en <strong>Dólares (USD)</strong> y <strong>Bolívares (Bs)</strong>.</li>
+            <li><strong>Cobro Rápido y Vuelto Inteligente:</strong> Puedes cobrar en Efectivo (COP, USD o Bs), Transferencia/QR, Punto o <strong>Pago Mixto</strong> (combinando varias monedas en una misma venta).</li>
+            <li><strong>Control de Gaveta para el Vuelto:</strong> Si un cliente paga con un billete de $20 USD y le das el vuelto en Pesos o Bolívares, eliges de qué gaveta salió el cambio para que tu arqueo nunca se descuadre.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-pedidos">
+          <h3>🎂 Módulo 2: Pedidos Personalizados y WhatsApp Automático</h3>
+          <ul class="tut-list">
+            <li><strong>Control de Abonos y Saldos:</strong> Registra encargos de tortas con fecha y hora de entrega, cuánto dejó de abono inicial y cuánto queda pendiente por cobrar.</li>
+            <li><strong>Aviso Automático por WhatsApp:</strong> Vincula tu WhatsApp escaneando el QR en el botón <strong>WhatsApp Auto</strong>. Cuando cambies un pedido a <strong>"🎁 Listo para Entregar"</strong>, el sistema le enviará automáticamente un mensaje al cliente informándole su saldo pendiente.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-inventario">
+          <h3>🍰 Módulo 3: Productos Terminados, Materia Prima y Caducidad</h3>
+          <ul class="tut-list">
+            <li><strong>Productos con Foto:</strong> En <em>Productos Terminados</em> puedes subir la foto real de cada postre, definir su stock actual, stock mínimo y fecha de vencimiento.</li>
+            <li><strong>Materia Prima / Insumos:</strong> Controla harina, azúcar, mantequilla, huevos y empaques por kilos, gramos o litros, descontando lo usado en cocina con el botón <strong>"- Usar"</strong>.</li>
+            <li><strong>Alertas Sonoras y Mermas:</strong> Cuando un producto o insumo está por agotarse o vencer, la barra superior emite una alerta visual y sonora. En <em>Caducidad y Mermas</em> registras bajas por vencimiento o daño.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-corte">
+          <h3>📊 Módulo 4: Gastos, Ingresos Extra y Entrega de Cuentas (Corte)</h3>
+          <ul class="tut-list">
+            <li><strong>Fondo Inicial, Gastos e Ingresos:</strong> Registra la base de efectivo con la que abres el turno y anota cualquier gasto (compra de hielo, gas, domicilio) indicando de qué moneda salió.</li>
+            <li><strong>Arqueo Ciego y Exacto:</strong> En <em>Entrega de Cuentas (Corte)</em> el sistema te muestra exactamente cuántos Pesos, Dólares y Bolívares debe haber en la gaveta. Ingresas el dinero físico contado y te dice al instante si la caja está <strong>Cuadrada</strong>, si <strong>Falta</strong> o si <strong>Sobra</strong> dinero.</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-module-box hidden" id="tutContent-usuarios">
+          <h3>🔐 Módulo 5: Control de Usuarios y Roles por PIN</h3>
+          <ul class="tut-list">
+            <li><strong>3 Roles Incorporados:</strong> <strong>👑 Administrador</strong> (acceso total, PIN inicial <code>1234</code>), <strong>🧾 Cajera</strong> (ventas, pedidos y caja, PIN <code>1111</code>) y <strong>👩‍🍳 Repostero</strong> (cocina, stock y pedidos, PIN <code>2222</code>).</li>
+            <li><strong>Bitácora de Auditoría:</strong> Todas las ventas, gastos y cambios quedan registrados con el nombre del usuario que tenía el turno activo.</li>
+          </ul>
+        </div>
+
+        <div class="modal-footer" style="justify-content:space-between;">
+          <button type="button" class="btn btn-outline" id="btnOnbBackToStep1">⬅ Volver a Personalizar</button>
+          <button type="button" class="btn btn-primary btn-lg" id="btnOnbNextToStep3">Siguiente: Activar Prueba ➔</button>
+        </div>
+      </div>
+
+      <!-- PASO 3: ACTIVACIÓN DE 7 DÍAS DE PRUEBA Y MEMBRESÍA -->
+      <div id="onbStep3" class="onb-step-body hidden">
+        <div style="text-align:center; padding: 10px 6px;">
+          <div style="font-size: 48px; margin-bottom: 8px;">🎁</div>
+          <h2 style="color:var(--secondary); font-size:22px;">¡Todo listo! Tienes 7 Días de Prueba Gratis</h2>
+          <p class="subtitle" style="max-width:520px; margin:6px auto 16px;">
+            Tu sistema para <strong id="onbSummaryBrandName">Dulce Repostería</strong> ya está configurado y personalizado.
+          </p>
+
+          <div class="membership-info-card" style="text-align:left; background:var(--bg-muted); border:2px solid var(--primary); border-radius:14px; padding:16px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong style="color:var(--secondary); font-size:15px;">💎 Plan Membresía Completa Repostería POS</strong>
+              <span class="status-badge entregado">7 Días Gratis Activos</span>
+            </div>
+            <p style="font-size:13px; color:var(--text-main); margin-bottom:8px;">
+              Disfruta de acceso ilimitado a Punto de Venta, Pedidos con WhatsApp, Inventario, Corte de Caja y Control de Usuarios durante tus <strong>7 días de prueba</strong>.
+            </p>
+            <div style="background:#fff; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:12.5px;">
+              💳 <strong>Valor de la suscripción al finalizar la prueba:</strong> <strong>$20.00 USD / mes</strong><br>
+              📲 <strong>Método de Pago:</strong> Pago Móvil en Bolívares calculado automáticamente a la <strong>Tasa Oficial del EURO (€) del BCV</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content:space-between;">
+          <button type="button" class="btn btn-outline" id="btnOnbBackToStep2">⬅ Volver al Tutorial</button>
+          <button type="button" class="btn btn-success btn-lg" id="btnFinishOnboarding">
+            🚀 Comenzar mis 7 Días de Prueba Ahora
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 1: SISTEMA DE MEMBRESÍA Y PANTALLA DE PAGO MÓVIL (BCV EURO) ==================== -->
+  <div class="modal-backdrop hidden no-print" id="modalMembership" style="z-index: 2050;">
+    <div class="modal-card" style="max-width: 560px; border-top: 6px solid var(--primary);">
+      <div class="modal-header">
+        <h3>💎 Mi Membresía y Pago Móvil ($20)</h3>
+        <button class="modal-close" id="btnCloseMembershipModal" data-close="modalMembership">✕</button>
+      </div>
+
+      <!-- Estado actual de la membresía / prueba -->
+      <div id="membershipStatusBanner" class="membership-status-banner">
+        <div>
+          <strong id="memBannerTitle">🎁 Período de Prueba Gratis Activo</strong>
+          <div id="memBannerSub" style="font-size:12.5px; margin-top:2px;">Te quedan 7 días de prueba gratuita.</div>
+        </div>
+        <span class="status-badge entregado" id="memBannerBadge">ACTIVO</span>
+      </div>
+
+      <!-- Recuadro de Conversión con API BCV (Tasa EURO) -->
+      <div class="bcv-euro-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+          <div>
+            <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--secondary);">🇪🇺 Tasa Oficial BCV (EURO - EUR)</span>
+            <div style="font-size:11px; color:var(--text-muted);" id="bcvEuroStatusText">Consultando API del BCV...</div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnRefreshBcvEuro">🔄 Actualizar BCV</button>
+        </div>
+
+        <div class="bcv-rate-row">
+          <div class="bcv-rate-box">
+            <small>Suscripción</small>
+            <strong>$20.00</strong>
+          </div>
+          <div class="bcv-rate-mult">×</div>
+          <div class="bcv-rate-box">
+            <small>Tasa Euro BCV (Bs/€)</small>
+            <input type="number" id="bcvEuroRateInput" step="0.01" min="1" value="50.00" title="Tasa oficial del Euro BCV en Bolívares" />
+          </div>
+          <div class="bcv-rate-mult">=</div>
+          <div class="bcv-rate-box total">
+            <small>Monto a Pagar en Bs</small>
+            <strong id="bcvTotalBsDisplay">Bs. 1.000,00</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datos Oficiales del Pago Móvil con Botones de Copiar -->
+      <div class="pago-movil-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <strong style="color:var(--secondary); font-size:14px;">📲 Datos para realizar el Pago Móvil</strong>
+          <button type="button" class="btn btn-outline btn-sm" id="btnCopyAllPagoMovil">
+            📋 Copiar Todos los Datos
+          </button>
+        </div>
+
+        <div class="pm-data-list">
+          <div class="pm-data-row">
+            <span>🏦 Banco:</span>
+            <div>
+              <strong>0105 (Banco Mercantil)</strong>
+              <button type="button" class="pm-copy-btn" data-copy="0105">📋 Copiar</button>
+            </div>
+          </div>
+          <div class="pm-data-row">
+            <span>📱 Teléfono:</span>
+            <div>
+              <strong>04127049393</strong>
+              <button type="button" class="pm-copy-btn" data-copy="04127049393">📋 Copiar</button>
+            </div>
+          </div>
+          <div class="pm-data-row">
+            <span>🪪 Cédula:</span>
+            <div>
+              <strong>26862189</strong>
+              <button type="button" class="pm-copy-btn" data-copy="26862189">📋 Copiar</button>
+            </div>
+          </div>
+          <div class="pm-data-row highlight">
+            <span>💰 Monto Exacto (Bs):</span>
+            <div>
+              <strong id="pmRowAmountBs">0.00 Bs</strong>
+              <button type="button" class="pm-copy-btn" id="btnCopyExactBs">📋 Copiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón principal que lleva a la ventana de validación de referencia -->
+      <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+        <button type="button" class="btn btn-success btn-block btn-lg" id="btnOpenValidatePaymentWindow">
+          ✅ Reportar Pago / Validar Referencia ➔
+        </button>
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between; margin-top:12px;">
+        <button type="button" class="btn-text" id="btnSimulateTrialExpired" style="font-size:11.5px; color:var(--text-muted);" title="Probar cómo se ve cuando vencen los 7 días">
+          🧪 Simular vencimiento de 7 días
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnCloseMembershipFooter" data-close="modalMembership">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: VENTANA PARA VALIDAR EL PAGO CON ÚLTIMOS DÍGITOS DE REFERENCIA ==================== -->
+  <div class="modal-backdrop hidden no-print" id="modalValidatePayment" style="z-index: 2150;">
+    <div class="modal-card" style="max-width: 460px; border-top: 6px solid var(--success);">
+      <div class="modal-header">
+        <h3>🔐 Validar Pago Móvil</h3>
+        <button class="modal-close" data-close="modalValidatePayment">✕</button>
+      </div>
+
+      <form id="formValidatePagoMovil">
+        <div style="background:var(--bg-muted); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px; font-size:13px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>Destino Pago Móvil:</span>
+            <strong>0105 | 04127049393 | V-26862189</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Monto a Validar ($20 a Tasa Euro BCV):</span>
+            <strong id="valModalAmountBs" style="color:var(--primary);">Bs. 0,00</strong>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paymentRefDigitsInput" style="font-size:14px;">🔢 Ingresa los últimos dígitos de la Referencia *</label>
+          <input
+            type="text"
+            id="paymentRefDigitsInput"
+            inputmode="numeric"
+            pattern="[0-9]{4,12}"
+            maxlength="12"
+            placeholder="Ej: 4829 (Últimos 4 a 6 dígitos)"
+            required
+            style="font-size:20px; font-weight:800; text-align:center; letter-spacing:4px; padding:12px;"
+          />
+          <small class="field-hint">Escribe los últimos dígitos del comprobante de tu Pago Móvil y pulsa Validar.</small>
+        </div>
+
+        <div class="modal-footer" style="justify-content:space-between;">
+          <button type="button" class="btn btn-outline" id="btnBackToMembershipModal">⬅ Volver a Datos</button>
+          <button type="submit" class="btn btn-success btn-lg">✅ Validar y Activar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- BARRA DE NAVEGACIÓN INFERIOR ESTILO APP MÓVIL -->
   <nav class="mobile-bottom-nav no-print" id="mobileBottomNav">
     <button type="button" class="mob-nav-btn active" data-mobtab="pos">
@@ -1713,6 +2069,6 @@
 
   <div id="toastContainer" class="toast-container no-print"></div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reposteria-pos-cache-v5';
+const CACHE_NAME = 'reposteria-pos-cache-v6';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', (event) => {

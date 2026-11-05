@@ -15,7 +15,8 @@ const MIME_TYPES = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon'
+  '.ico': 'image/x-icon',
+  '.apk': 'application/vnd.android.package-archive'
 };
 
 function getLocalIpAddress() {
@@ -142,6 +143,47 @@ const server = http.createServer(async (req, res) => {
     const mobileUrl = `http://${ip}:${PORT}`;
     const qrDataUrl = await QRCode.toDataURL(mobileUrl, { width: 240, margin: 1 });
     return sendJson(res, 200, { ip, port: PORT, mobileUrl, qrDataUrl });
+  }
+
+  if (safeUrl === '/api/bcv-euro' && req.method === 'GET') {
+    try {
+      const r = await fetch('https://ve.dolarapi.com/v1/cotizaciones/eur');
+      if (r.ok) {
+        const data = await r.json();
+        const rate = parseFloat(data.promedio || data.venta || data.compra);
+        if (rate > 0) {
+          return sendJson(res, 200, {
+            ok: true,
+            currency: 'EUR',
+            source: 'BCV Oficial (EUR)',
+            rate,
+            updatedAt: data.fechaActualizacion || new Date().toISOString()
+          });
+        }
+      }
+    } catch (_) {}
+    try {
+      const [rUsd, rFx] = await Promise.all([
+        fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
+        fetch('https://open.er-api.com/v6/latest/EUR')
+      ]);
+      if (rUsd.ok && rFx.ok) {
+        const dUsd = await rUsd.json();
+        const dFx = await rFx.json();
+        const bcvUsd = parseFloat(dUsd.promedio);
+        const eurToUsd = parseFloat(dFx?.rates?.USD) || 1.08;
+        if (bcvUsd > 0) {
+          return sendJson(res, 200, {
+            ok: true,
+            currency: 'EUR',
+            source: 'BCV Oficial (EUR)',
+            rate: Number((bcvUsd * eurToUsd).toFixed(2)),
+            updatedAt: dUsd.fechaActualizacion || new Date().toISOString()
+          });
+        }
+      }
+    } catch (_) {}
+    return sendJson(res, 503, { ok: false, error: 'No se pudo consultar BCV en este momento' });
   }
 
   if (safeUrl === '/api/wa/status' && req.method === 'GET') {

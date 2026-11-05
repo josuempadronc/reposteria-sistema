@@ -2321,6 +2321,241 @@ body {
   }
 }
 
+/* ==================== ASISTENTE INICIAL (TUTORIAL) Y MEMBRESÍA PAGO MÓVIL BCV ==================== */
+.onb-steps-header {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.onb-step-pill {
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.onb-step-pill.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 3px 8px rgba(200, 75, 107, 0.28);
+}
+
+.tutorial-modules-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tut-mod-btn {
+  flex: 1 1 auto;
+  background: var(--bg-muted);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tut-mod-btn.active,
+.tut-mod-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.tutorial-module-box {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.tutorial-module-box h3 {
+  font-size: 16px;
+  color: var(--secondary);
+  margin-bottom: 10px;
+}
+
+.tut-list {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-main);
+}
+
+.membership-status-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.membership-status-banner.expired {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.bcv-euro-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1.5px solid #fcd34d;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.bcv-rate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bcv-rate-box {
+  background: #fff;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bcv-rate-box small {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.bcv-rate-box strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+.bcv-rate-box input {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 4px;
+  color: var(--secondary);
+}
+
+.bcv-rate-box.total {
+  background: var(--secondary);
+  border-color: var(--secondary);
+}
+
+.bcv-rate-box.total small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bcv-rate-box.total strong {
+  color: #fde68a;
+  font-size: 16px;
+}
+
+.bcv-rate-mult {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--secondary);
+}
+
+.pago-movil-box {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.pm-data-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pm-data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-muted);
+  padding: 8px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.pm-data-row.highlight {
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+}
+
+.pm-data-row > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-copy-btn {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--secondary);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.pm-copy-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+@media (max-width: 600px) {
+  .onb-steps-header {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .bcv-rate-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bcv-rate-mult {
+    display: none;
+  }
+}
+
 .hidden {
   display: none !important;
 }

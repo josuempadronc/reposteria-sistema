@@ -32,6 +32,7 @@ const defaultState = {
   config: {
     brandName: 'Dulce Repostería',
     brandSlogan: 'Pastelería Artesanal & Café',
+    brandPhone: '',
     brandEmoji: '🧁',
     brandLogo: '',
     colorPrimary: '#c84b6b',
@@ -41,6 +42,16 @@ const defaultState = {
     categories: ['Pasteles', 'Porciones', 'Cupcakes', 'Galletas', 'Postres Fríos', 'Bebidas'],
     rateUSD: 4200, // 1 USD = 4,200 COP
     rateBS: 70     // 1 Bs = 70 COP
+  },
+  membership: {
+    onboardingCompleted: false,
+    status: 'trial', // 'trial' | 'active' | 'expired'
+    trialStartDate: null,
+    expiresAt: null,
+    planPriceUSD: 20,
+    bcvEuroRate: 52.50,
+    bcvEuroUpdatedAt: null,
+    payments: []
   },
   users: [
     { id: 'u1', name: 'Administrador General', avatar: '👑', role: 'admin', pin: '1234', active: true },
@@ -222,6 +233,7 @@ function loadState() {
       ...structuredClone(defaultState),
       ...parsed,
       config: { ...defaultState.config, ...(parsed.config || {}) },
+      membership: { ...defaultState.membership, ...(parsed.membership || {}) },
       baseCash: { ...defaultState.baseCash, ...(parsed.baseCash || {}) },
       users: parsed.users && parsed.users.length ? parsed.users : structuredClone(defaultState.users),
       auditLog: parsed.auditLog || structuredClone(defaultState.auditLog),
@@ -303,15 +315,21 @@ document.addEventListener('DOMContentLoaded', () => {
   initExpensesEvents();
   initCorteEvents();
   initConfigEvents();
+  initOnboardingAndMembershipEvents();
 
   renderAll();
-  if (state.config.requireLoginOnStart) {
+  if (!state.membership.onboardingCompleted) {
+    openOnboardingWizard(1);
+  } else if (isMembershipExpired()) {
+    openMembershipModal(true);
+  } else if (state.config.requireLoginOnStart) {
     openLoginScreen();
   }
 });
 
 function renderAll() {
   renderBrandAndRates();
+  renderMembershipStatus();
   renderActiveUserSession();
   renderCustomerSelectors();
   renderPOSCategories();
@@ -613,7 +631,7 @@ function initTopbarEvents() {
   let deferredInstallPrompt = null;
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker
-      .register('sw.js?v=5')
+      .register('sw.js?v=6')
       .then((reg) => reg.update())
       .catch(() => {});
   }
@@ -3607,5 +3625,489 @@ function setBadge(id, count) {
     el.classList.remove('hidden');
   } else {
     el.classList.add('hidden');
+  }
+}
+
+// ==========================================
+// ASISTENTE INICIAL (ONBOARDING), TUTORIAL DE MÓDULOS Y SISTEMA DE MEMBRESÍA ($20 / BCV EURO)
+// ==========================================
+const SUBSCRIPTION_PRICE_USD = 20;
+const PAGO_MOVIL_DATA = {
+  cedula: '26862189',
+  phone: '04127049393',
+  bank: '0105',
+  bankName: 'Banco Mercantil'
+};
+
+function getMembershipRemainingDays() {
+  if (!state.membership || !state.membership.expiresAt) return 7;
+  const diffMs = new Date(state.membership.expiresAt).getTime() - Date.now();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function isMembershipExpired() {
+  if (!state.membership || !state.membership.onboardingCompleted) return false;
+  if (state.membership.status === 'expired') return true;
+  return getMembershipRemainingDays() <= 0;
+}
+
+function renderMembershipStatus() {
+  if (!state.membership) return;
+  const days = getMembershipRemainingDays();
+  const expired = isMembershipExpired();
+
+  if (expired && state.membership.status !== 'expired') {
+    state.membership.status = 'expired';
+  }
+
+  const sidebarBadge = document.getElementById('sidebarMembershipBadge');
+  const topbarText = document.getElementById('topbarMembershipText');
+  const topbarBtn = document.getElementById('btnOpenMembershipTopbar');
+
+  let labelShort = '🎁 Prueba: 7d';
+  let labelLong = '🎁 Prueba: 7 días';
+
+  if (expired) {
+    labelShort = '⚠️ Vencida ($20)';
+    labelLong = '⚠️ Membresía Vencida';
+    if (topbarBtn) {
+      topbarBtn.classList.remove('btn-primary');
+      topbarBtn.classList.add('btn-danger');
+    }
+  } else if (state.membership.status === 'active') {
+    labelShort = `💎 Activa (${days}d)`;
+    labelLong = `💎 Activa: ${days} día(s)`;
+    if (topbarBtn) {
+      topbarBtn.classList.remove('btn-danger');
+      topbarBtn.classList.add('btn-primary');
+    }
+  } else {
+    labelShort = `🎁 Prueba (${days}d)`;
+    labelLong = `🎁 Prueba: ${days} día(s)`;
+    if (topbarBtn) {
+      topbarBtn.classList.remove('btn-danger');
+      topbarBtn.classList.add('btn-primary');
+    }
+  }
+
+  if (sidebarBadge) sidebarBadge.textContent = labelLong;
+  if (topbarText) topbarText.textContent = labelShort;
+}
+
+function openOnboardingWizard(stepNumber = 1) {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+
+  // Pre-cargar valores actuales de configuración
+  document.getElementById('onbBrandName').value = state.config.brandName || 'Dulce Repostería';
+  document.getElementById('onbBrandEmoji').value = state.config.brandEmoji || '🧁';
+  document.getElementById('onbBrandSlogan').value = state.config.brandSlogan || 'Pastelería Artesanal & Café';
+  document.getElementById('onbBrandPhone').value = state.config.brandPhone || '';
+  document.getElementById('onbColorPrimary').value = state.config.colorPrimary || '#c84b6b';
+  document.getElementById('onbColorSecondary').value = state.config.colorSecondary || '#5c3d2e';
+  document.getElementById('onbColorBg').value = state.config.colorBg || '#fdfaf7';
+  document.getElementById('onbRateUSD').value = state.config.rateUSD || 4200;
+  document.getElementById('onbRateBS').value = state.config.rateBS || 70;
+
+  setOnboardingStep(stepNumber);
+  overlay.classList.remove('hidden');
+}
+
+function setOnboardingStep(stepNumber) {
+  [1, 2, 3].forEach((n) => {
+    const stepEl = document.getElementById(`onbStep${n}`);
+    const pillEl = document.getElementById(`onbStepIndicator${n}`);
+    if (stepEl) stepEl.classList.toggle('hidden', n !== stepNumber);
+    if (pillEl) pillEl.classList.toggle('active', n === stepNumber);
+  });
+
+  if (stepNumber === 3) {
+    const nameVal = document.getElementById('onbBrandName').value.trim() || state.config.brandName;
+    const sumName = document.getElementById('onbSummaryBrandName');
+    if (sumName) sumName.textContent = nameVal;
+  }
+}
+
+function saveOnboardingStep1Data() {
+  const name = document.getElementById('onbBrandName').value.trim() || 'Dulce Repostería';
+  const emoji = document.getElementById('onbBrandEmoji').value.trim() || '🧁';
+  const slogan = document.getElementById('onbBrandSlogan').value.trim() || 'Pastelería, Postres y Café';
+  const phone = document.getElementById('onbBrandPhone').value.trim();
+  const cPrim = document.getElementById('onbColorPrimary').value || '#c84b6b';
+  const cSec = document.getElementById('onbColorSecondary').value || '#5c3d2e';
+  const cBg = document.getElementById('onbColorBg').value || '#fdfaf7';
+  const rUSD = parseFloat(document.getElementById('onbRateUSD').value) || 4200;
+  const rBS = parseFloat(document.getElementById('onbRateBS').value) || 70;
+
+  state.config.brandName = name;
+  state.config.brandEmoji = emoji;
+  state.config.brandSlogan = slogan;
+  state.config.brandPhone = phone;
+  state.config.colorPrimary = cPrim;
+  state.config.colorSecondary = cSec;
+  state.config.colorBg = cBg;
+  state.config.rateUSD = rUSD;
+  state.config.rateBS = rBS;
+
+  saveState();
+  renderAll();
+}
+
+async function fetchBcvEuroRate() {
+  const statusEl = document.getElementById('bcvEuroStatusText');
+  if (statusEl) statusEl.textContent = '⏳ Consultando tasa oficial EURO (EUR) en BCV...';
+
+  let rate = null;
+  let updatedStr = null;
+
+  // 1. Intentar desde API directa DolarApi Venezuela (Cotización Oficial Euro BCV)
+  try {
+    const res = await fetch('https://ve.dolarapi.com/v1/cotizaciones/eur');
+    if (res.ok) {
+      const data = await res.json();
+      const parsed = parseFloat(data.promedio || data.venta || data.compra);
+      if (parsed > 0) {
+        rate = Number(parsed.toFixed(2));
+        updatedStr = data.fechaActualizacion
+          ? new Date(data.fechaActualizacion).toLocaleDateString('es-VE')
+          : 'Hoy';
+      }
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Intentar mediante el endpoint de nuestro servidor local (/api/bcv-euro)
+  if (!rate) {
+    try {
+      const res = await fetch(getApiUrl('/api/bcv-euro'));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.rate > 0) {
+          rate = Number(parseFloat(data.rate).toFixed(2));
+          updatedStr = 'Hoy';
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fallback secundario: Dólar BCV oficial * paridad internacional EUR/USD
+  if (!rate) {
+    try {
+      const [rUsd, rFx] = await Promise.all([
+        fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
+        fetch('https://open.er-api.com/v6/latest/EUR')
+      ]);
+      if (rUsd.ok && rFx.ok) {
+        const dUsd = await rUsd.json();
+        const dFx = await rFx.json();
+        const bcvUsd = parseFloat(dUsd.promedio);
+        const eurToUsd = parseFloat(dFx?.rates?.USD) || 1.08;
+        if (bcvUsd > 0) {
+          rate = Number((bcvUsd * eurToUsd).toFixed(2));
+          updatedStr = 'Hoy';
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (rate && rate > 0) {
+    state.membership.bcvEuroRate = rate;
+    state.membership.bcvEuroUpdatedAt = new Date().toISOString();
+    saveState();
+    const inp = document.getElementById('bcvEuroRateInput');
+    if (inp) inp.value = rate.toFixed(2);
+    if (statusEl) {
+      statusEl.innerHTML = `<span style="color:var(--success);font-weight:700;">🟢 Tasa Oficial Euro BCV sincronizada (${updatedStr || 'En vivo'}): Bs. ${rate.toFixed(2)} / €</span>`;
+    }
+  } else {
+    const fallbackRate = state.membership.bcvEuroRate || 52.50;
+    const inp = document.getElementById('bcvEuroRateInput');
+    if (inp) inp.value = Number(fallbackRate).toFixed(2);
+    if (statusEl) {
+      statusEl.innerHTML = `<span style="color:var(--warning);font-weight:700;">⚠️ Usando última tasa Euro BCV guardada (puedes ajustarla manualmente)</span>`;
+    }
+  }
+
+  updateMembershipBsCalculation();
+}
+
+function getMembershipAmountBs() {
+  const inp = document.getElementById('bcvEuroRateInput');
+  const rate = parseFloat(inp ? inp.value : state.membership.bcvEuroRate) || state.membership.bcvEuroRate || 52.50;
+  return Number((SUBSCRIPTION_PRICE_USD * rate).toFixed(2));
+}
+
+function updateMembershipBsCalculation() {
+  const inp = document.getElementById('bcvEuroRateInput');
+  const rate = parseFloat(inp ? inp.value : state.membership.bcvEuroRate) || 52.50;
+  state.membership.bcvEuroRate = rate;
+  const totalBs = Number((SUBSCRIPTION_PRICE_USD * rate).toFixed(2));
+  const formattedBs = `Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const disp1 = document.getElementById('bcvTotalBsDisplay');
+  const disp2 = document.getElementById('pmRowAmountBs');
+  const disp3 = document.getElementById('valModalAmountBs');
+
+  if (disp1) disp1.textContent = formattedBs;
+  if (disp2) disp2.textContent = formattedBs;
+  if (disp3) disp3.textContent = formattedBs;
+}
+
+function openMembershipModal(forceLock = false) {
+  const modal = document.getElementById('modalMembership');
+  if (!modal) return;
+
+  const expired = isMembershipExpired() || forceLock;
+  const days = getMembershipRemainingDays();
+
+  const banner = document.getElementById('membershipStatusBanner');
+  const titleEl = document.getElementById('memBannerTitle');
+  const subEl = document.getElementById('memBannerSub');
+  const badgeEl = document.getElementById('memBannerBadge');
+  const btnCloseTop = document.getElementById('btnCloseMembershipModal');
+  const btnCloseFoot = document.getElementById('btnCloseMembershipFooter');
+
+  if (expired) {
+    banner.classList.add('expired');
+    titleEl.textContent = '⚠️ Período de Prueba / Membresía Finalizado';
+    subEl.textContent = 'Realiza tu Pago Móvil de $20 (a tasa Euro BCV) y valida la referencia para continuar.';
+    badgeEl.className = 'status-badge cancelado';
+    badgeEl.textContent = 'VENCIDO';
+    if (btnCloseTop) btnCloseTop.classList.add('hidden');
+    if (btnCloseFoot) btnCloseFoot.classList.add('hidden');
+  } else if (state.membership.status === 'active') {
+    banner.classList.remove('expired');
+    titleEl.textContent = '💎 Membresía Mensual Activa';
+    subEl.textContent = `Tu suscripción está al día. Te quedan ${days} día(s) activos.`;
+    badgeEl.className = 'status-badge entregado';
+    badgeEl.textContent = 'ACTIVA';
+    if (btnCloseTop) btnCloseTop.classList.remove('hidden');
+    if (btnCloseFoot) btnCloseFoot.classList.remove('hidden');
+  } else {
+    banner.classList.remove('expired');
+    titleEl.textContent = '🎁 Período de Prueba Gratis Activo (7 Días)';
+    subEl.textContent = `Disfruta tu prueba gratuita. Te quedan ${days} día(s) antes del corte mensual ($20).`;
+    badgeEl.className = 'status-badge entregado';
+    badgeEl.textContent = `${days} DÍAS GRATIS`;
+    if (btnCloseTop) btnCloseTop.classList.remove('hidden');
+    if (btnCloseFoot) btnCloseFoot.classList.remove('hidden');
+  }
+
+  const inp = document.getElementById('bcvEuroRateInput');
+  if (inp) inp.value = Number(state.membership.bcvEuroRate || 52.50).toFixed(2);
+  updateMembershipBsCalculation();
+
+  modal.classList.remove('hidden');
+  fetchBcvEuroRate();
+}
+
+async function copyTextToClipboard(text, label) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(`📋 Copiado al portapapeles: ${label}`);
+  } catch (_) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast(`📋 Copiado al portapapeles: ${label}`);
+  }
+}
+
+function initOnboardingAndMembershipEvents() {
+  // Selectores de color en vivo dentro del Paso 1 del Onboarding
+  document.querySelectorAll('.onb-preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.p;
+      const s = btn.dataset.s;
+      const b = btn.dataset.b;
+      document.getElementById('onbColorPrimary').value = p;
+      document.getElementById('onbColorSecondary').value = s;
+      document.getElementById('onbColorBg').value = b;
+      applyThemeColors(p, s, b);
+    });
+  });
+
+  ['onbColorPrimary', 'onbColorSecondary', 'onbColorBg'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => {
+        applyThemeColors(
+          document.getElementById('onbColorPrimary').value,
+          document.getElementById('onbColorSecondary').value,
+          document.getElementById('onbColorBg').value
+        );
+      });
+    }
+  });
+
+  // Navegación entre los 3 pasos del Onboarding
+  const btnStep2 = document.getElementById('btnOnbNextToStep2');
+  if (btnStep2) {
+    btnStep2.addEventListener('click', () => {
+      saveOnboardingStep1Data();
+      setOnboardingStep(2);
+    });
+  }
+
+  const btnBack1 = document.getElementById('btnOnbBackToStep1');
+  if (btnBack1) btnBack1.addEventListener('click', () => setOnboardingStep(1));
+
+  const btnStep3 = document.getElementById('btnOnbNextToStep3');
+  if (btnStep3) btnStep3.addEventListener('click', () => setOnboardingStep(3));
+
+  const btnBack2 = document.getElementById('btnOnbBackToStep2');
+  if (btnBack2) btnBack2.addEventListener('click', () => setOnboardingStep(2));
+
+  // Selector interactivo de módulos dentro del Paso 2 (Tutorial)
+  document.querySelectorAll('#tutorialModulesNav .tut-mod-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#tutorialModulesNav .tut-mod-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.tut;
+      ['pos', 'pedidos', 'inventario', 'corte', 'usuarios'].forEach((mod) => {
+        const box = document.getElementById(`tutContent-${mod}`);
+        if (box) box.classList.toggle('hidden', mod !== target);
+      });
+    });
+  });
+
+  // Finalizar Onboarding y activar los 7 días de prueba gratis
+  const btnFinish = document.getElementById('btnFinishOnboarding');
+  if (btnFinish) {
+    btnFinish.addEventListener('click', () => {
+      saveOnboardingStep1Data();
+      if (!state.membership.onboardingCompleted || !state.membership.expiresAt) {
+        state.membership.onboardingCompleted = true;
+        state.membership.status = 'trial';
+        state.membership.trialStartDate = new Date().toISOString();
+        state.membership.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      }
+      saveState();
+      renderAll();
+      document.getElementById('onboardingOverlay').classList.add('hidden');
+      showToast('🎉 ¡Bienvenido! Se han activado tus 7 días de prueba gratis.');
+    });
+  }
+
+  // Botones para abrir el Tutorial o la ventana de Membresía en cualquier momento
+  ['btnOpenTutorialTopbar', 'btnOpenTutorialSidebar'].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        closeMobileSidebar();
+        openOnboardingWizard(1);
+      });
+    }
+  });
+
+  ['btnOpenMembershipTopbar', 'btnOpenMembershipSidebar'].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        closeMobileSidebar();
+        openMembershipModal(false);
+      });
+    }
+  });
+
+  // Eventos de Tasa BCV Euro y Copiado de Datos de Pago Móvil
+  const btnRefreshBcv = document.getElementById('btnRefreshBcvEuro');
+  if (btnRefreshBcv) btnRefreshBcv.addEventListener('click', fetchBcvEuroRate);
+
+  const inpBcvEuro = document.getElementById('bcvEuroRateInput');
+  if (inpBcvEuro) inpBcvEuro.addEventListener('input', updateMembershipBsCalculation);
+
+  document.querySelectorAll('.pm-copy-btn[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const val = btn.dataset.copy;
+      copyTextToClipboard(val, val);
+    });
+  });
+
+  const btnCopyBs = document.getElementById('btnCopyExactBs');
+  if (btnCopyBs) {
+    btnCopyBs.addEventListener('click', () => {
+      const bsVal = getMembershipAmountBs().toFixed(2);
+      copyTextToClipboard(bsVal, `Bs. ${bsVal}`);
+    });
+  }
+
+  const btnCopyAll = document.getElementById('btnCopyAllPagoMovil');
+  if (btnCopyAll) {
+    btnCopyAll.addEventListener('click', () => {
+      const bsVal = getMembershipAmountBs().toFixed(2);
+      const fullText = `Pago Móvil\nBanco: ${PAGO_MOVIL_DATA.bank} (${PAGO_MOVIL_DATA.bankName})\nTeléfono: ${PAGO_MOVIL_DATA.phone}\nCédula: ${PAGO_MOVIL_DATA.cedula}\nMonto: ${bsVal} Bs ($20 a Tasa Euro BCV)`;
+      copyTextToClipboard(fullText, 'Todos los datos de Pago Móvil');
+    });
+  }
+
+  // Botón "Pagar / Validar Referencia" -> Abre la ventana de validación de últimos dígitos
+  const btnOpenValWin = document.getElementById('btnOpenValidatePaymentWindow');
+  if (btnOpenValWin) {
+    btnOpenValWin.addEventListener('click', () => {
+      updateMembershipBsCalculation();
+      document.getElementById('paymentRefDigitsInput').value = '';
+      openModal('modalValidatePayment');
+      setTimeout(() => document.getElementById('paymentRefDigitsInput').focus(), 120);
+    });
+  }
+
+  const btnBackMem = document.getElementById('btnBackToMembershipModal');
+  if (btnBackMem) {
+    btnBackMem.addEventListener('click', () => {
+      closeModal('modalValidatePayment');
+    });
+  }
+
+  // Validar Pago con los últimos dígitos de la referencia
+  const formVal = document.getElementById('formValidatePagoMovil');
+  if (formVal) {
+    formVal.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const rawRef = (document.getElementById('paymentRefDigitsInput').value || '').replace(/[^0-9]/g, '');
+      if (rawRef.length < 4) {
+        showToast('⚠️ Ingresa al menos los últimos 4 dígitos numéricos de la referencia');
+        return;
+      }
+
+      const amountBs = getMembershipAmountBs();
+      const rateUsed = state.membership.bcvEuroRate || 52.50;
+
+      state.membership.status = 'active';
+      state.membership.onboardingCompleted = true;
+      state.membership.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      state.membership.payments = state.membership.payments || [];
+      state.membership.payments.unshift({
+        id: 'pay_' + Date.now(),
+        timestamp: new Date().toISOString(),
+        refDigits: rawRef,
+        amountUSD: SUBSCRIPTION_PRICE_USD,
+        rateEurBcv: rateUsed,
+        amountBs
+      });
+
+      logUserAction(`Validó Pago Móvil de Membresía ($20 / Bs. ${amountBs.toFixed(2)}) - Ref: #${rawRef}`);
+      saveState();
+      renderAll();
+
+      closeModal('modalValidatePayment');
+      closeModal('modalMembership');
+      showToast(`✅ ¡Pago validado (Ref #${rawRef})! Tu membresía está activa por 30 días.`);
+    });
+  }
+
+  // Botón para probar cómo luce cuando se vencen los 7 días de prueba
+  const btnSimExp = document.getElementById('btnSimulateTrialExpired');
+  if (btnSimExp) {
+    btnSimExp.addEventListener('click', () => {
+      state.membership.status = 'expired';
+      state.membership.expiresAt = new Date(Date.now() - 86400000).toISOString();
+      saveState();
+      renderAll();
+      openMembershipModal(true);
+      showToast('🧪 Simulación activada: Período de 7 días vencido. Valida una referencia para reactivar.');
+    });
   }
 }
