@@ -3632,6 +3632,7 @@ function setBadge(id, count) {
 // ASISTENTE INICIAL (ONBOARDING), TOUR MÓDULO POR MÓDULO Y MEMBRESÍA CENTRALIZADA ($20 / BCV EURO)
 // ==========================================
 const SUBSCRIPTION_PRICE_USD = 20;
+const FIREBASE_RTDB_URL = 'https://reposteria-sistema-pos-default-rtdb.firebaseio.com/reposteria_licenses';
 const PAGO_MOVIL_DATA = {
   cedula: '26862189',
   phone: '04127049393',
@@ -3666,6 +3667,64 @@ function generateUnlockPinLocal(licenseId, refDigits) {
 
 async function syncLicenseWithAdminServer() {
   const licenseId = ensureLicenseId();
+  const applyRemoteInstallation = (remote) => {
+    if (!remote || !remote.status) return;
+    const prevStatus = state.membership.status;
+    state.membership.status = remote.status;
+    if (remote.expiresAt) state.membership.expiresAt = remote.expiresAt;
+    saveState();
+    renderMembershipStatus();
+
+    if (prevStatus !== 'active' && remote.status === 'active') {
+      const notice = document.getElementById('valModalPendingNotice');
+      if (notice) notice.classList.add('hidden');
+      closeModal('modalValidatePayment');
+      closeModal('modalMembership');
+      showToast('🎉 ¡Tu Pago Móvil fue validado por el Administrador! Membresía activa por 30 días.');
+    } else if (remote.status === 'suspended') {
+      openMembershipModal(true);
+    }
+  };
+
+  // 1. Sincronización en la nube con Firebase Realtime Database (funciona 24/7 desde cualquier celular o red)
+  if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
+    try {
+      const fbRes = await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`);
+      if (fbRes.ok) {
+        const fbInst = await fbRes.json();
+        if (!fbInst) {
+          const initialInst = {
+            licenseId,
+            brandName: state.config.brandName || 'Dulce Repostería',
+            brandPhone: state.config.brandPhone || '',
+            status: state.membership.status || 'trial',
+            expiresAt: state.membership.expiresAt || new Date(Date.now() + 7 * 86400000).toISOString(),
+            createdAt: new Date().toISOString(),
+            lastSyncAt: new Date().toISOString(),
+            payments: []
+          };
+          await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialInst)
+          });
+        } else {
+          await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              brandName: state.config.brandName || fbInst.brandName,
+              brandPhone: state.config.brandPhone || fbInst.brandPhone || '',
+              lastSyncAt: new Date().toISOString()
+            })
+          });
+          applyRemoteInstallation(fbInst);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. Sincronización con servidor local si está en la misma red Wi-Fi / PC
   try {
     const res = await fetch(getApiUrl('/api/licenses/sync'), {
       method: 'POST',
@@ -3681,23 +3740,7 @@ async function syncLicenseWithAdminServer() {
     if (!res.ok) return;
     const data = await res.json();
     if (data.ok && data.installation) {
-      const remote = data.installation;
-      const prevStatus = state.membership.status;
-      state.membership.status = remote.status;
-      if (remote.expiresAt) state.membership.expiresAt = remote.expiresAt;
-      saveState();
-      renderMembershipStatus();
-
-      // Si estaba esperando validación o vencido y el administrador lo aprobó desde admin.html:
-      if (prevStatus !== 'active' && remote.status === 'active') {
-        const notice = document.getElementById('valModalPendingNotice');
-        if (notice) notice.classList.add('hidden');
-        closeModal('modalValidatePayment');
-        closeModal('modalMembership');
-        showToast('🎉 ¡Tu Pago Móvil fue validado por el Administrador! Membresía activa por 30 días.');
-      } else if (remote.status === 'suspended') {
-        openMembershipModal(true);
-      }
+      applyRemoteInstallation(data.installation);
     }
   } catch (_) {}
 }
@@ -4354,7 +4397,75 @@ function initOnboardingAndMembershipEvents() {
         return;
       }
 
-      // Enviar solicitud de validación al Panel Maestro de Administración (/api/licenses/report-payment)
+      // 1. Enviar solicitud de validación a Firebase Realtime Database (para administración online desde cualquier lugar)
+      let handledByCloud = false;
+      if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
+        try {
+          let manualReq = true;
+          try {
+            const cfgRes = await fetch(`${FIREBASE_RTDB_URL}/config/requireManualApproval.json`);
+            if (cfgRes.ok) {
+              const cfgVal = await cfgRes.json();
+              if (cfgVal === false) manualReq = false;
+            }
+          } catch (_) {}
+
+          const paymentEntry = {
+            refDigits: rawRef,
+            amountBs,
+            rateEurBcv: rateUsed,
+            reportedAt: new Date().toISOString()
+          };
+
+          if (!manualReq) {
+            const newExp = new Date(Date.now() + 30 * 86400000).toISOString();
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                licenseId,
+                brandName: state.config.brandName || 'Dulce Repostería',
+                brandPhone: state.config.brandPhone || '',
+                status: 'active',
+                expiresAt: newExp,
+                pendingPayment: null,
+                lastSyncAt: new Date().toISOString()
+              })
+            });
+            state.membership.status = 'active';
+            state.membership.onboardingCompleted = true;
+            state.membership.expiresAt = newExp;
+            saveState();
+            renderAll();
+            closeModal('modalValidatePayment');
+            closeModal('modalMembership');
+            showToast(`✅ ¡Pago validado (Ref #${rawRef})! Tu membresía está activa por 30 días.`);
+            handledByCloud = true;
+          } else {
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                licenseId,
+                brandName: state.config.brandName || 'Dulce Repostería',
+                brandPhone: state.config.brandPhone || '',
+                status: 'pending_validation',
+                pendingPayment: paymentEntry,
+                lastSyncAt: new Date().toISOString()
+              })
+            });
+            state.membership.status = 'pending_validation';
+            saveState();
+            renderAll();
+            const notice = document.getElementById('valModalPendingNotice');
+            if (notice) notice.classList.remove('hidden');
+            showToast(`⏳ Referencia #${rawRef} enviada al Panel de Administración Online para aprobación.`);
+            handledByCloud = true;
+          }
+        } catch (_) {}
+      }
+
+      // 2. Enviar solicitud también al servidor local (/api/licenses/report-payment) si está disponible
       try {
         const res = await fetch(getApiUrl('/api/licenses/report-payment'), {
           method: 'POST',
@@ -4388,11 +4499,15 @@ function initOnboardingAndMembershipEvents() {
             renderAll();
             const notice = document.getElementById('valModalPendingNotice');
             if (notice) notice.classList.remove('hidden');
-            showToast(`⏳ Referencia #${rawRef} enviada al Panel de Administración para aprobación.`);
+            if (!handledByCloud) {
+              showToast(`⏳ Referencia #${rawRef} enviada al Panel de Administración para aprobación.`);
+            }
             return;
           }
         }
       } catch (_) {}
+
+      if (handledByCloud) return;
 
       // Si está sin conexión al servidor local y no ingresó PIN, activar o pedir PIN:
       state.membership.status = 'active';

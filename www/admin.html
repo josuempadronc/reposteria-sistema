@@ -324,6 +324,9 @@
   </div>
 
   <script>
+    const FIREBASE_RTDB_URL = 'https://reposteria-sistema-pos-default-rtdb.firebaseio.com/reposteria_licenses';
+    let cachedInstallationsMap = {};
+
     function generateUnlockPinClient(licenseId, refDigits) {
       const cleanId = String(licenseId || 'REP').replace(/[^A-Z0-9]/gi, '').toUpperCase();
       const cleanRef = String(refDigits || '0000').replace(/[^0-9]/g, '');
@@ -346,14 +349,52 @@
     document.getElementById('pinCalcRefDigits').addEventListener('input', updatePinCalculator);
 
     async function loadAdminData() {
+      const mergedMap = {};
+      let requireManualApproval = true;
+
+      // 1. Cargar desde Firebase Realtime Database (Nube 24/7)
+      if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
+        try {
+          const fbRes = await fetch(`${FIREBASE_RTDB_URL}.json`);
+          if (fbRes.ok) {
+            const fbData = await fbRes.json();
+            if (fbData) {
+              if (fbData.config && typeof fbData.config.requireManualApproval === 'boolean') {
+                requireManualApproval = fbData.config.requireManualApproval;
+              }
+              if (fbData.installations) {
+                Object.values(fbData.installations).forEach((inst) => {
+                  if (inst && inst.licenseId) mergedMap[inst.licenseId] = inst;
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Error consultando Firebase RTDB:', e);
+        }
+      }
+
+      // 2. Cargar también desde servidor local si está activo
       try {
         const res = await fetch('/api/admin/licenses');
-        if (!res.ok) return;
-        const data = await res.json();
-        renderAdminDashboard(data);
-      } catch (e) {
-        console.error(e);
-      }
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.requireManualApproval === 'boolean') {
+            requireManualApproval = data.requireManualApproval;
+          }
+          (data.installations || []).forEach((inst) => {
+            if (inst && inst.licenseId && !mergedMap[inst.licenseId]) {
+              mergedMap[inst.licenseId] = inst;
+            }
+          });
+        }
+      } catch (_) {}
+
+      cachedInstallationsMap = mergedMap;
+      renderAdminDashboard({
+        requireManualApproval,
+        installations: Object.values(mergedMap)
+      });
     }
 
     function renderAdminDashboard(data) {
@@ -477,23 +518,98 @@
 
     async function adminAction(action, licenseId, days = 7) {
       if (action === 'delete' && !confirm(`¿Eliminar el registro de la APK ${licenseId}?`)) return;
-      await fetch('/api/admin/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, licenseId, days })
-      });
+
+      // 1. Ejecutar acción en Firebase Realtime Database (Nube 24/7)
+      if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
+        try {
+          const inst = cachedInstallationsMap[licenseId] || { licenseId, payments: [] };
+          if (action === 'approve_payment') {
+            const newExp = new Date(Date.now() + 30 * 86400000).toISOString();
+            const payments = Array.isArray(inst.payments) ? [...inst.payments] : [];
+            if (inst.pendingPayment) {
+              payments.unshift({ ...inst.pendingPayment, approvedAt: new Date().toISOString() });
+            } else {
+              payments.unshift({ refDigits: 'MANUAL', amountBs: 0, approvedAt: new Date().toISOString() });
+            }
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'active',
+                expiresAt: newExp,
+                pendingPayment: null,
+                payments
+              })
+            });
+          } else if (action === 'reject_payment') {
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'expired',
+                pendingPayment: null
+              })
+            });
+          } else if (action === 'grant_days') {
+            const newExp = new Date(Date.now() + Number(days || 7) * 86400000).toISOString();
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'trial',
+                expiresAt: newExp
+              })
+            });
+          } else if (action === 'suspend') {
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'suspended'
+              })
+            });
+          } else if (action === 'delete') {
+            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+              method: 'DELETE'
+            });
+          }
+        } catch (e) {
+          console.warn('Error actualizando Firebase RTDB:', e);
+        }
+      }
+
+      // 2. Ejecutar también en servidor local si está activo
+      try {
+        await fetch('/api/admin/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, licenseId, days })
+        });
+      } catch (_) {}
+
       loadAdminData();
     }
 
     document.getElementById('chkRequireManualApproval').addEventListener('change', async (e) => {
-      await fetch('/api/admin/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'toggle_manual_approval',
-          requireManualApproval: e.target.checked
-        })
-      });
+      if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
+        try {
+          await fetch(`${FIREBASE_RTDB_URL}/config.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requireManualApproval: e.target.checked })
+          });
+        } catch (_) {}
+      }
+      try {
+        await fetch('/api/admin/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'toggle_manual_approval',
+            requireManualApproval: e.target.checked
+          })
+        });
+      } catch (_) {}
       loadAdminData();
     });
 
