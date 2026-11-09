@@ -3,6 +3,17 @@
 // Precios base en Pesos (COP) con conversión automática a USD y Bs
 // ==========================================
 
+// Función global de sanitización de cadenas para prevención de inyecciones XSS
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Generador de ilustraciones SVG limpias para productos de muestra
 function makeSampleProductSvg(bg, emoji, label) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
@@ -882,7 +893,8 @@ async function sendOrderReadyWhatsApp(order) {
     `🎂 *Detalle:* ${order.description}\n` +
     `📅 *Entrega programada:* ${order.deliveryDate} (${order.deliveryTime || ''})\n` +
     `${balanceLines}\n\n` +
-    `¡Te esperamos! Muchas gracias por preferirnos ❤️`;
+    `¡Te esperamos! Muchas gracias por preferirnos ❤️\n\n` +
+    `_📌 Comprobante de comanda y entrega emitido para control interno (Documento No Fiscal — SENIAT)._`;
 
   // 1) Intentar envío 100% automático en segundo plano por el servidor local
   if (currentWaServerStatus === 'connected') {

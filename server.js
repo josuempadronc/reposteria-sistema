@@ -128,10 +128,16 @@ async function startWhatsAppBot() {
   }
 }
 
-function parseJsonBody(req) {
+function parseJsonBody(req, maxBytes = 2 * 1024 * 1024) {
   return new Promise((resolve) => {
     let body = '';
+    let size = 0;
     req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        req.destroy();
+        return resolve({});
+      }
       body += chunk;
     });
     req.on('end', () => {
@@ -148,6 +154,10 @@ function sendJson(res, status, payload) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
@@ -434,9 +444,35 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
-  const filePath = path.join(ROOT, safeUrl === '/' ? 'index.html' : safeUrl);
-  const ext = path.extname(filePath).toLowerCase();
+  let decodedUrl = '/index.html';
+  try {
+    decodedUrl = decodeURIComponent(safeUrl === '/' ? '/index.html' : safeUrl);
+  } catch (_) {}
+  const normalizedPath = path.normalize(decodedUrl);
+  const filePath = path.resolve(ROOT, '.' + normalizedPath);
+  const rootResolved = path.resolve(ROOT);
 
+  if (!filePath.startsWith(rootResolved)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Acceso denegado: Path Traversal');
+  }
+
+  const relPath = path.relative(rootResolved, filePath).replace(/\\/g, '/');
+  const isSensitive =
+    relPath.startsWith('wa_auth_info') ||
+    relPath.startsWith('.git') ||
+    relPath.startsWith('.firebase') ||
+    relPath === 'licenses_db.json' ||
+    relPath === 'server.js' ||
+    relPath === 'package.json' ||
+    relPath.split('/').some((part) => part.startsWith('.'));
+
+  if (isSensitive) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Acceso restringido');
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
   fs.readFile(filePath, (err, content) => {
     if (err) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
