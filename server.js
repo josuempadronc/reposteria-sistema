@@ -7,15 +7,24 @@ const PORT = 8080;
 const ROOT = __dirname;
 const AUTH_DIR = path.join(ROOT, 'wa_auth_info');
 const LICENSES_FILE = path.join(ROOT, 'licenses_db.json');
+const FIREBASE_RTDB_URL = 'https://reposteria-sistema-pos-default-rtdb.firebaseio.com/reposteria_licenses';
 
 function loadLicensesDb() {
   try {
     if (fs.existsSync(LICENSES_FILE)) {
-      return JSON.parse(fs.readFileSync(LICENSES_FILE, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(LICENSES_FILE, 'utf8'));
+      if (!data.adminWhatsapp) {
+        data.adminWhatsapp = { phone: '04127049393', notifyOnPayment: true };
+      }
+      return data;
     }
   } catch (_) {}
   return {
     requireManualApproval: true,
+    adminWhatsapp: {
+      phone: '04127049393',
+      notifyOnPayment: true
+    },
     installations: []
   };
 }
@@ -25,6 +34,108 @@ function saveLicensesDb(db) {
     fs.writeFileSync(LICENSES_FILE, JSON.stringify(db, null, 2), 'utf8');
   } catch (_) {}
 }
+
+
+function formatPhoneForWhatsApp(phone) {
+  let clean = String(phone || '').replace(/[^0-9]/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('0') && clean.length === 11) {
+    clean = '58' + clean.slice(1);
+  } else if (!clean.startsWith('58') && (clean.length === 10 || clean.length === 11)) {
+    clean = '58' + clean;
+  }
+  return clean;
+}
+
+async function sendWhatsAppMessageDirect(phone, text) {
+  if (waStatus !== 'connected' || !waSock) {
+    console.warn('[WA-BOT] WhatsApp no conectado. Estado:', waStatus);
+    return { ok: false, error: 'Bot de WhatsApp no conectado' };
+  }
+  const cleanPhone = formatPhoneForWhatsApp(phone);
+  if (!cleanPhone || !text) {
+    return { ok: false, error: 'Falta teléfono o texto' };
+  }
+  try {
+    const jid = `${cleanPhone}@s.whatsapp.net`;
+    await waSock.sendMessage(jid, { text });
+    console.log(`[WA-BOT] ✅ Mensaje enviado exitosamente a ${cleanPhone}`);
+    return { ok: true, sentTo: cleanPhone };
+  } catch (err) {
+    console.error(`[WA-BOT] ❌ Error enviando a ${cleanPhone}:`, err.message);
+    return { ok: false, error: err.message };
+  }
+}
+
+async function notifyAdminOfPayment(inst, p) {
+  try {
+    const db = loadLicensesDb();
+    const cfg = db.adminWhatsapp || { phone: '04127049393', notifyOnPayment: true };
+    if (!cfg.notifyOnPayment) return;
+    const adminPhone = cfg.phone || '04127049393';
+    if (!adminPhone) return;
+
+    const pin = generateUnlockPin(inst.licenseId, p.refDigits);
+    const reportedTime = p.reportedAt
+      ? new Date(p.reportedAt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+      : 'Reciente';
+
+    const msg =
+      `🔔 *¡NUEVO PAGO REGISTRADO EN POSTFLOW!* 💰\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `🏬 *Negocio:* ${inst.brandName || 'PostFlow Negocio'} (${inst.licenseId})\n` +
+      `🔢 *Ref. Pago Móvil:* #${p.refDigits || '----'}\n` +
+      `🏦 *Banco:* ${p.bankName || 'Pago Móvil'}\n` +
+      `💵 *Monto:* Bs. ${Number(p.amountBs || 0).toFixed(2)} (Tasa €: ${p.rateEurBcv || '-'}\n` +
+      `📱 *Teléfono Cliente:* ${inst.brandPhone || p.payerPhone || 'No especificado'}\n` +
+      `🕒 *Hora:* ${reportedTime}\n\n` +
+      `🔑 *PIN Maestro de Activación:* *${pin}*\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `👉 *Verifica y Activa en tu Panel Maestro:*\n` +
+      `https://reposteria-sistema-pos.web.app/admin.html`;
+
+    return await sendWhatsAppMessageDirect(adminPhone, msg);
+  } catch (e) {
+    console.warn('[WA-BOT] Error en notifyAdminOfPayment:', e);
+  }
+}
+
+// MONITOREO EN LA NUBE (FIREBASE) PARA NOTIFICAR AL ADMIN EN VIVO
+const notifiedPaymentsSet = new Set();
+async function pollFirebasePendingPayments() {
+  if (!FIREBASE_RTDB_URL || waStatus !== 'connected') return;
+  try {
+    const res = await fetch(`${FIREBASE_RTDB_URL}/installations.json`);
+    if (!res.ok) return;
+    const installations = await res.json();
+    if (!installations) return;
+
+    for (const inst of Object.values(installations)) {
+      if (!inst || !inst.licenseId || !inst.pendingPayment) continue;
+      const p = inst.pendingPayment;
+      const paymentKey = `${inst.licenseId}_${p.refDigits}_${p.reportedAt || ''}`;
+
+      if (notifiedPaymentsSet.has(paymentKey) || p.adminNotifiedViaWhatsApp) {
+        continue;
+      }
+
+      console.log(`[WA-BOT] 🔔 Nuevo pago detectado en Firebase: ${inst.brandName} (Ref #${p.refDigits}). Notificando al Admin...`);
+      const notifyRes = await notifyAdminOfPayment(inst, p);
+
+      if (notifyRes && notifyRes.ok) {
+        notifiedPaymentsSet.add(paymentKey);
+        try {
+          await fetch(`${FIREBASE_RTDB_URL}/installations/${inst.licenseId}/pendingPayment.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminNotifiedViaWhatsApp: true })
+          });
+        } catch (_) {}
+      }
+    }
+  } catch (_) {}
+}
+setInterval(pollFirebasePendingPayments, 4000);
 
 function generateUnlockPin(licenseId, refDigits) {
   const cleanId = String(licenseId || 'REP').replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -398,11 +509,71 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true, installation: inst });
   }
 
+  
+  if (safeUrl === '/api/admin/whatsapp-config' && req.method === 'GET') {
+    const db = loadLicensesDb();
+    return sendJson(res, 200, {
+      ok: true,
+      adminWhatsapp: db.adminWhatsapp || { phone: '04127049393', notifyOnPayment: true }
+    });
+  }
+
+  if (safeUrl === '/api/admin/whatsapp-config' && req.method === 'POST') {
+    const body = await parseJsonBody(req);
+    const db = loadLicensesDb();
+    db.adminWhatsapp = {
+      phone: String(body.phone || '04127049393').trim(),
+      notifyOnPayment: body.notifyOnPayment !== false
+    };
+    saveLicensesDb(db);
+
+    // Intentar sincronizar también en Firebase RTDB
+    try {
+      await fetch(`${FIREBASE_RTDB_URL}/config/adminWhatsapp.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(db.adminWhatsapp)
+      });
+    } catch (_) {}
+
+    return sendJson(res, 200, { ok: true, adminWhatsapp: db.adminWhatsapp });
+  }
+
+  if (safeUrl === '/api/wa/test' && req.method === 'POST') {
+    const body = await parseJsonBody(req);
+    const db = loadLicensesDb();
+    const phone = body.phone || (db.adminWhatsapp && db.adminWhatsapp.phone) || '04127049393';
+
+    if (waStatus !== 'connected' || !waSock) {
+      return sendJson(res, 400, {
+        ok: false,
+        error: 'El Bot de WhatsApp aún no está vinculado. Escanea el código QR primero.'
+      });
+    }
+
+    const testMsg =
+      `🤖 *¡PRUEBA EXITOSA DEL BOT POSTFLOW!* ⚡\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `¡Hola Administrador! Tu Bot de WhatsApp está 100% configurado y vinculado.\n\n` +
+      `A partir de ahora, cada vez que un cliente reporte un Pago Móvil en tu sistema, recibirás una notificación instantánea con la referencia, el monto y el PIN de activación.\n\n` +
+      `🕒 Fecha/Hora: ${new Date().toLocaleString('es-VE')}\n` +
+      `━━━━━━━━━━━━━━━━━━━━`;
+
+    const resSend = await sendWhatsAppMessageDirect(phone, testMsg);
+    if (resSend.ok) {
+      return sendJson(res, 200, { ok: true, message: 'Mensaje de prueba enviado con éxito' });
+    } else {
+      return sendJson(res, 500, { ok: false, error: resSend.error || 'Error enviando mensaje' });
+    }
+  }
+
   if (safeUrl === '/api/wa/status' && req.method === 'GET') {
+    const db = loadLicensesDb();
     return sendJson(res, 200, {
       status: waStatus,
       qrDataUrl: waQrDataUrl,
-      userPhone: waConnectedUser
+      userPhone: waConnectedUser,
+      adminWhatsapp: db.adminWhatsapp || { phone: '04127049393', notifyOnPayment: true }
     });
   }
 
