@@ -12,6 +12,7 @@ const files = [
   'styles.css',
   'app.js',
   'manifest.json',
+  'html5-qrcode.min.js',
   'icon.svg',
   'sw.js',
   'icon-postflow.png',

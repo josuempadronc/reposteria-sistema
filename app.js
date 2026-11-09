@@ -219,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initOnboardingAndMembershipEvents();
   initCloudSyncEvents();
   initPermissionsAndTermsEvents();
+  initBarcodeAndScannerEvents();
 
   renderAll();
   if (!state.membership.onboardingCompleted) {
@@ -1298,7 +1299,8 @@ function renderPOSProducts() {
     const matchQuery =
       !query ||
       p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query);
+      p.category.toLowerCase().includes(query) ||
+      (p.barcode && p.barcode.toLowerCase().includes(query));
     return matchCat && matchQuery;
   });
 
@@ -1328,8 +1330,9 @@ function renderPOSProducts() {
           </div>
           <div class="prod-card-body">
             <div>
-              <div class="prod-title">${p.name}</div>
-              <div class="prod-cat">${p.category}</div>
+              <div class="prod-title">${escapeHtml(p.name)}</div>
+              <div class="prod-cat">${escapeHtml(p.category)}</div>
+              ${p.barcode ? `<div class="prod-card-barcode">🏷️ ${escapeHtml(p.barcode)}</div>` : ''}
             </div>
             <div class="prod-prices">
               <div class="price-cop">${fmtCOP(p.priceCOP)}</div>
@@ -1755,7 +1758,8 @@ function renderInventoryTable() {
     const matchText =
       !query ||
       p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query);
+      p.category.toLowerCase().includes(query) ||
+      (p.barcode && p.barcode.toLowerCase().includes(query));
     if (!matchText) return false;
     if (statusFilter === 'low') return p.stock <= p.minStock;
     if (statusFilter === 'expiring') return isExpiringSoonOrExpired(p.expiry);
@@ -1769,18 +1773,23 @@ function renderInventoryTable() {
       const isLow = p.stock <= p.minStock;
       const expiryBadge = formatExpiryBadge(p.expiry);
       const thumbHtml = p.image
-        ? `<img src="${p.image}" alt="${p.name}" />`
+        ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" />`
         : `<span>${p.emoji || '🍰'}</span>`;
+
+      const barcodeHtml = p.barcode
+        ? `<span class="barcode-pill">🏷️ ${escapeHtml(p.barcode)}</span>`
+        : `<span style="color:var(--text-muted);font-size:11px;">—</span>`;
 
       return `
         <tr>
           <td>
             <div class="table-prod-cell">
               <div class="table-thumb">${thumbHtml}</div>
-              <strong>${p.name}</strong>
+              <strong>${escapeHtml(p.name)}</strong>
             </div>
           </td>
-          <td>${p.category}</td>
+          <td>${barcodeHtml}</td>
+          <td>${escapeHtml(p.category)}</td>
           <td><strong>${fmtCOP(p.priceCOP)}</strong></td>
           <td>${fmtUSD(usd)}</td>
           <td>${fmtBS(bs)}</td>
@@ -1909,6 +1918,7 @@ function initInventoryEvents() {
     const prodData = {
       id: id || 'p_' + Date.now(),
       name: document.getElementById('prodName').value.trim(),
+      barcode: document.getElementById('prodBarcode').value.trim(),
       emoji: document.getElementById('prodEmoji').value.trim() || '🍰',
       image: document.getElementById('prodImageData').value || '',
       category: document.getElementById('prodCategory').value,
@@ -1947,6 +1957,7 @@ function openProductModal(productId) {
     document.getElementById('modalProductTitle').textContent = 'Editar Producto';
     document.getElementById('prodId').value = p.id;
     document.getElementById('prodName').value = p.name;
+    document.getElementById('prodBarcode').value = p.barcode || '';
     document.getElementById('prodEmoji').value = p.emoji || '🍰';
     document.getElementById('prodCategory').value = p.category;
     document.getElementById('prodPriceCOP').value = p.priceCOP;
@@ -1959,6 +1970,7 @@ function openProductModal(productId) {
     document.getElementById('modalProductTitle').textContent = 'Nuevo Producto Terminado';
     document.getElementById('formProduct').reset();
     document.getElementById('prodId').value = '';
+    document.getElementById('prodBarcode').value = '';
     document.getElementById('prodEmoji').value = '🍰';
     updateProductModalImagePreview('', '🍰');
     document.getElementById('prodLiveConversion').innerHTML = `Equivale a: <strong>$ 0.00 USD</strong> | <strong>0.00 Bs</strong>`;
@@ -5089,6 +5101,337 @@ function initPermissionsAndTermsEvents() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       requestScreenWakeLock();
+    }
+  });
+}
+
+// ==========================================
+// MÓDULO DE CÓDIGO DE BARRAS (CÁMARA / PISTOLA USB HID)
+// ==========================================
+
+let html5QrScannerInstance = null;
+let currentScannerContext = 'pos'; // 'pos' | 'inventory' | 'product-modal'
+let availableScannerCameras = [];
+let currentCameraIndex = 0;
+let lastScannedCode = '';
+let lastScannedTime = 0;
+
+// Reproducción de sonido de escáner comercial de supermercado (Web Audio API)
+function playBarcodeBeep(success = true) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (success) {
+      // Pitido limpio y agudo característico de escáner retail (2100 Hz, 75ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2100, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
+    } else {
+      // Tono grave de advertencia de lectura fallida (300 Hz)
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.22);
+    }
+  } catch (_) {}
+}
+
+// Procesamiento centralizado de cualquier código leído (por cámara, pistola USB o manual)
+function handleBarcodeDetected(rawCode, source = 'cam') {
+  if (!rawCode) return;
+  const code = String(rawCode).trim();
+  if (!code) return;
+
+  // 1. Si estamos editando o creando un producto en el modal
+  const modalProd = document.getElementById('modalProduct');
+  const isEditingProduct = modalProd && !modalProd.classList.contains('hidden');
+  if (currentScannerContext === 'product-modal' || isEditingProduct) {
+    const input = document.getElementById('prodBarcode');
+    if (input) {
+      input.value = code;
+      playBarcodeBeep(true);
+      showToast(`🏷️ Código de barras asignado: ${code}`);
+      stopBarcodeScanner();
+      return;
+    }
+  }
+
+  // 2. Buscar producto en el catálogo por código de barras o ID
+  const product = state.products.find(
+    (p) => (p.barcode && p.barcode.trim().toLowerCase() === code.toLowerCase()) || p.id === code
+  );
+
+  // 3. Si estamos en modo búsqueda de Inventario
+  if (currentScannerContext === 'inventory') {
+    playBarcodeBeep(!!product);
+    const invInput = document.getElementById('invSearchInput');
+    if (invInput) {
+      invInput.value = code;
+      renderInventoryTable();
+    }
+    if (product) {
+      showToast(`🔍 Producto localizado: ${product.name}`);
+    } else {
+      showToast(`⚠️ No hay producto con código: ${code}`);
+    }
+    stopBarcodeScanner();
+    return;
+  }
+
+  // 4. Modo por defecto: Punto de Venta (POS) / Cobranza
+  if (product) {
+    playBarcodeBeep(true);
+    addToCart(product.id);
+    showToast(`🛒 "${product.name}" agregado a la orden`);
+
+    if (source === 'cam') {
+      const msg = document.getElementById('scannerStatusMessage');
+      if (msg) {
+        msg.textContent = `✅ "${product.name}" agregado a la orden`;
+        msg.className = 'scanner-status-msg success';
+        msg.classList.remove('hidden');
+        setTimeout(() => msg.classList.add('hidden'), 1800);
+      }
+    }
+  } else {
+    playBarcodeBeep(false);
+    showToast(`⚠️ Código "${code}" no registrado en inventario`);
+    if (source === 'cam') {
+      const msg = document.getElementById('scannerStatusMessage');
+      if (msg) {
+        msg.textContent = `⚠️ Código "${code}" no encontrado`;
+        msg.className = 'scanner-status-msg error';
+        msg.classList.remove('hidden');
+        setTimeout(() => msg.classList.add('hidden'), 2200);
+      }
+    }
+  }
+}
+
+// Iniciar escaneo con cámara del teléfono o webcam
+async function startBarcodeScanner(context = 'pos') {
+  currentScannerContext = context;
+  openModal('modalBarcodeScanner');
+
+  const titleEl = document.getElementById('modalScannerTitle');
+  const instrEl = document.getElementById('scannerInstructionText');
+  const msgEl = document.getElementById('scannerStatusMessage');
+  if (msgEl) msgEl.classList.add('hidden');
+
+  if (context === 'product-modal') {
+    if (titleEl) titleEl.textContent = '🏷️ Escanear Código para Producto';
+    if (instrEl) instrEl.textContent = 'Apunta la cámara al código de barras para asignarlo a este producto.';
+  } else if (context === 'inventory') {
+    if (titleEl) titleEl.textContent = '🔍 Buscar Producto por Código';
+    if (instrEl) instrEl.textContent = 'Apunta la cámara para filtrar y ubicar el producto en inventario.';
+  } else {
+    if (titleEl) titleEl.textContent = '🛒 Escanear para Venta';
+    if (instrEl) instrEl.textContent = 'Apunta la cámara al código de barras para agregarlo de inmediato a la orden.';
+  }
+
+  if (typeof Html5Qrcode === 'undefined') {
+    showToast('⚠️ Módulo de cámara no disponible en este dispositivo');
+    return;
+  }
+
+  try {
+    if (!html5QrScannerInstance) {
+      html5QrScannerInstance = new Html5Qrcode('barcodeReaderRegion', {
+        verbose: false,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.ITF
+        ]
+      });
+    }
+
+    if (availableScannerCameras.length === 0) {
+      try {
+        availableScannerCameras = await Html5Qrcode.getCameras();
+      } catch (camErr) {
+        console.warn('Error listando cámaras:', camErr);
+      }
+    }
+
+    const config = {
+      fps: 15,
+      qrbox: { width: 280, height: 160 },
+      aspectRatio: 1.333
+    };
+
+    const qrCodeSuccessCallback = (decodedText) => {
+      const now = Date.now();
+      // Anti-rebote de 1.8 segundos para lecturas continuas del mismo código
+      if (decodedText === lastScannedCode && (now - lastScannedTime) < 1800) {
+        return;
+      }
+      lastScannedCode = decodedText;
+      lastScannedTime = now;
+      handleBarcodeDetected(decodedText, 'cam');
+      if (currentScannerContext === 'product-modal' || currentScannerContext === 'inventory') {
+        stopBarcodeScanner();
+      }
+    };
+
+    let cameraConfig = { facingMode: 'environment' };
+    if (availableScannerCameras.length > 0) {
+      const selectedCam = availableScannerCameras[currentCameraIndex % availableScannerCameras.length];
+      if (selectedCam && selectedCam.id) {
+        cameraConfig = selectedCam.id;
+      }
+    }
+
+    if (html5QrScannerInstance.isScanning) {
+      await html5QrScannerInstance.stop();
+    }
+
+    await html5QrScannerInstance.start(
+      cameraConfig,
+      config,
+      qrCodeSuccessCallback,
+      () => {}
+    );
+  } catch (err) {
+    console.warn('No se pudo iniciar la cámara:', err);
+    showToast('⚠️ Cámara no disponible o permiso denegado. Puedes usar la pistola o escribirlo abajo.');
+  }
+}
+
+// Detener cámara y cerrar modal
+async function stopBarcodeScanner() {
+  if (html5QrScannerInstance && html5QrScannerInstance.isScanning) {
+    try {
+      await html5QrScannerInstance.stop();
+    } catch (_) {}
+  }
+  closeModal('modalBarcodeScanner');
+}
+
+// Detección inteligente de pistola lectora de código de barras (USB / Bluetooth HID)
+let barcodeGunBuffer = '';
+let lastGunKeyTime = 0;
+
+function initBarcodeGunListener() {
+  window.addEventListener('keydown', (e) => {
+    const now = Date.now();
+    const delta = now - lastGunKeyTime;
+    lastGunKeyTime = now;
+
+    // Los lectores láser/ópticos emiten caracteres en ráfagas < 80ms entre teclas.
+    // Si transcurren más de 120ms, se reinicia el búfer para no interferir con la escritura humana.
+    if (delta > 120) {
+      barcodeGunBuffer = '';
+    }
+
+    if (e.key === 'Enter') {
+      const trimmed = barcodeGunBuffer.trim();
+      if (trimmed.length >= 3) {
+        // Ráfaga rápida culminada en Enter = Lectura de Pistola
+        if (e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+        }
+        handleBarcodeDetected(trimmed, 'gun');
+        barcodeGunBuffer = '';
+      } else {
+        barcodeGunBuffer = '';
+      }
+    } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      barcodeGunBuffer += e.key;
+    }
+  });
+
+  // Envío manual o con lector enfocado en el campo del modal
+  document.getElementById('formManualBarcode')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const inp = document.getElementById('inputManualBarcode');
+    const val = inp ? inp.value.trim() : '';
+    if (val) {
+      handleBarcodeDetected(val, 'manual');
+      inp.value = '';
+    }
+  });
+
+  // Búsqueda instantánea con Enter en el buscador del POS
+  document.getElementById('posSearchInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const query = e.target.value.trim();
+      if (!query) return;
+      const exactProd = state.products.find(
+        (p) => (p.barcode && p.barcode.toLowerCase() === query.toLowerCase()) || p.id === query || p.name.toLowerCase() === query.toLowerCase()
+      );
+      if (exactProd) {
+        e.preventDefault();
+        addToCart(exactProd.id);
+        playBarcodeBeep(true);
+        showToast(`🛒 "${exactProd.name}" agregado a la orden`);
+        e.target.value = '';
+        renderPOSProducts();
+      }
+    }
+  });
+}
+
+function initBarcodeAndScannerEvents() {
+  initBarcodeGunListener();
+
+  // Botón cámara en el catálogo de productos (Punto de Venta)
+  document.getElementById('btnPosCameraScanner')?.addEventListener('click', () => {
+    startBarcodeScanner('pos');
+  });
+
+  // Botón cámara en el inventario
+  document.getElementById('btnInvCameraScanner')?.addEventListener('click', () => {
+    startBarcodeScanner('inventory');
+  });
+
+  // Botón cámara en la barra móvil
+  document.getElementById('btnMobileBarcodeScan')?.addEventListener('click', () => {
+    const currentTab = document.querySelector('.tab-section.active')?.id;
+    startBarcodeScanner(currentTab === 'tab-inventory' ? 'inventory' : 'pos');
+  });
+
+  // Botón escanear en el formulario de producto
+  document.getElementById('btnScanBarcodeModalProd')?.addEventListener('click', () => {
+    startBarcodeScanner('product-modal');
+  });
+
+  // Botón detener cámara en modal
+  document.getElementById('btnStopScannerModal')?.addEventListener('click', () => {
+    stopBarcodeScanner();
+  });
+
+  // Botón cerrar modal
+  document.getElementById('btnCloseScannerModal')?.addEventListener('click', () => {
+    stopBarcodeScanner();
+  });
+
+  // Botón alternar entre cámaras (trasera / frontal)
+  document.getElementById('btnSwitchScannerCamera')?.addEventListener('click', async () => {
+    if (availableScannerCameras.length > 1) {
+      currentCameraIndex = (currentCameraIndex + 1) % availableScannerCameras.length;
+      await startBarcodeScanner(currentScannerContext);
+    } else {
+      showToast('ℹ️ Solo hay 1 cámara detectada en este dispositivo');
     }
   });
 }

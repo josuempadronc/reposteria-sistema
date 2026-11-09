@@ -1,5 +1,5 @@
-const CACHE_NAME = 'reposteria-pos-cache-v7';
-const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json', '/icon.svg'];
+const CACHE_NAME = 'postflow-pos-cache-v8';
+const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/html5-qrcode.min.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

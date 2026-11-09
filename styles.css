@@ -699,6 +699,9 @@ body {
 
 .search-box {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -707,15 +710,19 @@ body {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .search-box input {
+  flex: 1;
   width: 100%;
   padding: 10px 14px 10px 38px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-family: inherit;
+  background: var(--bg-surface);
 }
 
 .category-Chips {
@@ -1666,10 +1673,6 @@ body {
   box-shadow: var(--shadow-md);
   font-weight: 600;
   font-size: 13px;
-}
-
-.hidden {
-  display: none !important;
 }
 
 .print-only-header {
@@ -2638,6 +2641,122 @@ body {
   .bcv-rate-mult {
     display: none;
   }
+}
+
+/* ==================== ESCÁNER DE CÓDIGOS DE BARRA ==================== */
+.btn-scan-cam {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-scan-cam:hover {
+  background: var(--primary-light, #e0f2fe);
+  border-color: var(--primary, #0284c7);
+  color: var(--primary, #0284c7);
+}
+
+.scanner-viewport-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0f172a;
+  min-height: 250px;
+  max-height: 310px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.4);
+}
+
+#barcodeReaderRegion {
+  width: 100% !important;
+}
+
+#barcodeReaderRegion video {
+  width: 100% !important;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Animación de láser rojo de escáner */
+.scanner-laser-line {
+  position: absolute;
+  top: 10%;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ef4444, #f87171, #ef4444, transparent);
+  box-shadow: 0 0 10px #ef4444, 0 0 4px #f87171;
+  pointer-events: none;
+  animation: scanLaser 2s ease-in-out infinite alternate;
+  z-index: 10;
+}
+
+@keyframes scanLaser {
+  0% { top: 12%; opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { top: 88%; opacity: 0.8; }
+}
+
+.scanner-status-msg {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.scanner-status-msg.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.scanner-status-msg.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* Badge de código de barras */
+.barcode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.prod-card-barcode {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: monospace;
+  margin-top: 3px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 .hidden {

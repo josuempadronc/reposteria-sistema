@@ -140,6 +140,9 @@
           <small id="mobileActiveTabTitle">Punto de Venta</small>
         </div>
         <div class="mobile-header-right">
+          <button type="button" class="mobile-icon-btn" id="btnMobileBarcodeScan" title="Escanear Código de Barras con Cámara">
+            📷
+          </button>
           <button type="button" class="mobile-icon-btn" id="btnToggleMobileTopbar" title="Tasas de Cambio y Acciones Rápidas">
             💱
           </button>
@@ -234,7 +237,10 @@
             <div class="catalog-toolbar">
               <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" id="posSearchInput" placeholder="Buscar pastel, postre, bebida, galleta..." />
+                <input type="text" id="posSearchInput" placeholder="Buscar por nombre, código de barras o pistola..." />
+                <button type="button" class="btn btn-outline btn-sm btn-scan-cam" id="btnPosCameraScanner" title="Escanear código de barras con cámara">
+                  📷 Escanear
+                </button>
               </div>
               <div class="category-Chips" id="posCategoryList">
                 <!-- Categorías dinámicas -->
@@ -507,7 +513,13 @@
         </div>
 
         <div class="filter-bar">
-          <input type="text" id="invSearchInput" placeholder="Buscar producto por nombre o categoría..." />
+          <div class="search-box" style="flex: 1; margin-bottom: 0;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="invSearchInput" placeholder="Buscar por nombre, categoría o código de barras..." />
+            <button type="button" class="btn btn-outline btn-sm btn-scan-cam" id="btnInvCameraScanner" title="Escanear código de barras con cámara">
+              📷 Escanear
+            </button>
+          </div>
           <select id="invFilterStatus">
             <option value="all">Todos los productos</option>
             <option value="low">⚠️ Stock bajo o agotado</option>
@@ -520,6 +532,7 @@
             <thead>
               <tr>
                 <th>Imagen / Producto</th>
+                <th>Cód. Barras</th>
                 <th>Categoría</th>
                 <th>Precio (COP)</th>
                 <th>En USD ($)</th>
@@ -1141,12 +1154,19 @@
         </div>
 
         <div class="form-row-inline">
-          <div class="form-group">
+          <div class="form-group" style="flex: 1.4;">
+            <label>Código de Barras / SKU (Opcional)</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="prodBarcode" placeholder="Ej. 7591234567890 o lee con pistola" autocomplete="off" />
+              <button type="button" class="btn btn-outline btn-sm" id="btnScanBarcodeModalProd" title="Escanear con cámara">📷</button>
+            </div>
+          </div>
+          <div class="form-group" style="flex: 1;">
             <label>Categoría *</label>
             <select id="prodCategory" required></select>
           </div>
-          <div class="form-group">
-            <label>Precio de Venta en Pesos (COP) *</label>
+          <div class="form-group" style="flex: 1;">
+            <label>Precio en COP *</label>
             <input type="number" id="prodPriceCOP" required min="0" step="50" placeholder="Ej. 12000" />
           </div>
         </div>
@@ -1645,6 +1665,49 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" data-close="modalApk">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LECTOR DE CÓDIGO DE BARRAS CON CÁMARA / PISTOLA -->
+  <div class="modal-backdrop hidden no-print" id="modalBarcodeScanner" style="z-index: 2200;">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+      <div class="modal-header">
+        <h3 id="modalScannerTitle">📷 Lector de Código de Barras</h3>
+        <button class="modal-close" data-close="modalBarcodeScanner" id="btnCloseScannerModal">✕</button>
+      </div>
+      <div style="padding: 12px 16px;">
+        <p class="text-muted" style="font-size: 13px; margin-bottom: 12px;" id="scannerInstructionText">
+          Apunta la cámara del celular o pistola al código de barras del producto.
+        </p>
+
+        <!-- Visor de la cámara -->
+        <div id="scannerReaderWrapper" class="scanner-viewport-box">
+          <div id="barcodeReaderRegion" style="width: 100%;"></div>
+          <div class="scanner-laser-line"></div>
+        </div>
+
+        <div id="scannerStatusMessage" class="scanner-status-msg hidden"></div>
+
+        <div style="display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-outline btn-sm" id="btnSwitchScannerCamera">🔄 Cambiar Cámara</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnToggleTorch" style="display: none;">💡 Linterna</button>
+          <button type="button" class="btn btn-outline btn-sm danger" id="btnStopScannerModal">⏹️ Detener Cámara</button>
+        </div>
+
+        <!-- Ingreso manual o pistola alternativa -->
+        <div class="manual-barcode-box" style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; text-align: left;">
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">
+            🔫 Pistola USB / Lectura Manual:
+          </label>
+          <form id="formManualBarcode" style="display: flex; gap: 6px;">
+            <input type="text" id="inputManualBarcode" placeholder="Escanear o tipear código..." autocomplete="off" style="flex: 1; padding: 7px 10px; font-family: monospace; font-size: 14px;" />
+            <button type="submit" class="btn btn-primary btn-sm">Aceptar</button>
+          </form>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modalBarcodeScanner">Cerrar</button>
       </div>
     </div>
   </div>
@@ -2477,6 +2540,7 @@
 
   <div id="toastContainer" class="toast-container no-print"></div>
 
-  <script src="app.js?v=7"></script>
+  <script src="html5-qrcode.min.js"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
