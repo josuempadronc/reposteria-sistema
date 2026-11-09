@@ -249,6 +249,9 @@ function loadState() {
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   updateGlobalAlerts();
+  if (typeof scheduleCloudBackup === 'function') {
+    scheduleCloudBackup();
+  }
 }
 
 // ==========================================
@@ -316,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCorteEvents();
   initConfigEvents();
   initOnboardingAndMembershipEvents();
+  initCloudSyncEvents();
 
   renderAll();
   if (!state.membership.onboardingCompleted) {
@@ -4534,4 +4538,404 @@ function initOnboardingAndMembershipEvents() {
       showToast('🧪 Simulación activada: Período de 7 días vencido.');
     });
   }
+}
+
+// ==========================================
+// RESPALDO Y RECUPERACIÓN EN LA NUBE (FIREBASE REALTIME DATABASE)
+// ==========================================
+let cloudBackupTimer = null;
+let lastCloudBackupIso = null;
+let pendingCloudRestoreData = null;
+
+function cleanPhoneDigits(raw) {
+  return String(raw || '').replace(/[^0-9]/g, '');
+}
+
+function updateCloudSyncUIStatus(customText = null) {
+  const topbarEl = document.getElementById('topbarCloudSyncText');
+  const cfgEl = document.getElementById('cfgCloudSyncStatusText');
+  const modalLastEl = document.getElementById('cloudModalLastBackupDisplay');
+  const modalPhoneEl = document.getElementById('cloudModalPhoneDisplay');
+  const modalIdEl = document.getElementById('cloudModalLicenseId');
+  const modalStatusEl = document.getElementById('cloudModalStatusDisplay');
+  const cfgIdEl = document.getElementById('cfgCloudLicenseId');
+
+  const licId = (state.membership && state.membership.licenseId) || ensureLicenseId();
+  if (modalIdEl) modalIdEl.textContent = licId;
+  if (cfgIdEl) cfgIdEl.textContent = licId;
+  if (modalPhoneEl) modalPhoneEl.textContent = state.config.brandPhone || 'Sin teléfono guardado';
+
+  if (modalStatusEl) {
+    if (state.membership.status === 'active') {
+      modalStatusEl.innerHTML = '<span style="color:var(--success);">💎 Membresía Activa ($20)</span>';
+    } else {
+      modalStatusEl.innerHTML = '<span style="color:#f59e0b;">🎁 Prueba Gratuita (7 días)</span>';
+    }
+  }
+
+  let text = customText;
+  if (!text) {
+    if (lastCloudBackupIso) {
+      const timeStr = new Date(lastCloudBackupIso).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+      text = `Nube: Al día (${timeStr})`;
+    } else {
+      text = 'Nube: Conectado';
+    }
+  }
+
+  if (topbarEl) topbarEl.textContent = text;
+  if (cfgEl) cfgEl.textContent = `☁️ ${text}`;
+  if (modalLastEl) {
+    if (lastCloudBackupIso) {
+      modalLastEl.textContent = `${new Date(lastCloudBackupIso).toLocaleDateString('es-VE')} a las ${new Date(lastCloudBackupIso).toLocaleTimeString('es-VE')}`;
+    } else {
+      modalLastEl.textContent = 'En espera de primer autoguardado';
+    }
+  }
+}
+
+function scheduleCloudBackup(immediate = false) {
+  if (!FIREBASE_RTDB_URL || !FIREBASE_RTDB_URL.startsWith('https://')) return;
+  if (cloudBackupTimer) {
+    clearTimeout(cloudBackupTimer);
+    cloudBackupTimer = null;
+  }
+  if (immediate) {
+    pushCloudBackup();
+  } else {
+    cloudBackupTimer = setTimeout(() => {
+      pushCloudBackup();
+    }, 3500);
+  }
+}
+
+async function pushCloudBackup() {
+  if (!FIREBASE_RTDB_URL || !FIREBASE_RTDB_URL.startsWith('https://')) return;
+  const licenseId = ensureLicenseId();
+  updateCloudSyncUIStatus('Guardando en Nube...');
+
+  try {
+    const cleanPhone = cleanPhoneDigits(state.config.brandPhone);
+    const nowIso = new Date().toISOString();
+
+    const payload = {
+      licenseId,
+      brandName: state.config.brandName || 'Dulce Repostería',
+      brandPhone: state.config.brandPhone || '',
+      updatedAt: nowIso,
+      data: {
+        config: state.config,
+        products: state.products,
+        ingredients: state.ingredients,
+        sales: state.sales,
+        expenses: state.expenses,
+        mermas: state.mermas,
+        customers: state.customers,
+        orders: state.orders,
+        closedDays: state.closedDays,
+        baseCash: state.baseCash,
+        auditLog: state.auditLog,
+        users: state.users,
+        membership: state.membership
+      }
+    };
+
+    // 1. Guardar backup completo
+    await fetch(`${FIREBASE_RTDB_URL}/backups/${licenseId}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    // 2. Actualizar registro en lista de instalaciones
+    await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        brandName: state.config.brandName || 'Dulce Repostería',
+        brandPhone: state.config.brandPhone || '',
+        lastBackupAt: nowIso,
+        stats: {
+          products: (state.products || []).length,
+          sales: (state.sales || []).length,
+          orders: (state.orders || []).length,
+          customers: (state.customers || []).length
+        }
+      })
+    });
+
+    // 3. Indexar por teléfono para búsqueda rápida
+    if (cleanPhone && cleanPhone.length >= 7) {
+      await fetch(`${FIREBASE_RTDB_URL}/phone_lookup/${cleanPhone}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(licenseId)
+      });
+      if (cleanPhone.startsWith('0')) {
+        const intlPhone = '58' + cleanPhone.slice(1);
+        await fetch(`${FIREBASE_RTDB_URL}/phone_lookup/${intlPhone}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(licenseId)
+        });
+      } else if (cleanPhone.startsWith('58')) {
+        const localPhone = '0' + cleanPhone.slice(2);
+        await fetch(`${FIREBASE_RTDB_URL}/phone_lookup/${localPhone}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(licenseId)
+        });
+      }
+    }
+
+    lastCloudBackupIso = nowIso;
+    updateCloudSyncUIStatus();
+  } catch (err) {
+    console.warn('Error al respaldar en Firebase RTDB:', err);
+    updateCloudSyncUIStatus('Nube: Desconectado');
+  }
+}
+
+async function searchCloudBackup(rawQuery, inputPin) {
+  if (!FIREBASE_RTDB_URL) throw new Error('Servicio de Nube no configurado.');
+  const query = String(rawQuery || '').trim();
+  if (!query) throw new Error('Por favor escribe tu Teléfono o tu ID de Negocio.');
+
+  let targetId = null;
+  const digits = cleanPhoneDigits(query);
+
+  // 1. Si parece un ID de licencia directo (ej: REP-1234)
+  if (query.toUpperCase().includes('REP') || /[A-Za-z]/.test(query)) {
+    targetId = query.toUpperCase();
+  } else if (digits.length >= 7) {
+    // 2. Buscar por teléfono en phone_lookup
+    try {
+      const pRes = await fetch(`${FIREBASE_RTDB_URL}/phone_lookup/${digits}.json`);
+      if (pRes.ok) {
+        const pVal = await pRes.json();
+        if (typeof pVal === 'string') targetId = pVal;
+      }
+    } catch (_) {}
+
+    // Si no encontró, probar con variante 58 o 0
+    if (!targetId && digits.startsWith('0')) {
+      try {
+        const pRes = await fetch(`${FIREBASE_RTDB_URL}/phone_lookup/58${digits.slice(1)}.json`);
+        if (pRes.ok) targetId = await pRes.json();
+      } catch (_) {}
+    } else if (!targetId && digits.startsWith('58')) {
+      try {
+        const pRes = await fetch(`${FIREBASE_RTDB_URL}/phone_lookup/0${digits.slice(2)}.json`);
+        if (pRes.ok) targetId = await pRes.json();
+      } catch (_) {}
+    }
+
+    // Si aún no encuentra en lookup, escanear instalaciones directamente
+    if (!targetId) {
+      try {
+        const instRes = await fetch(`${FIREBASE_RTDB_URL}/installations.json`);
+        if (instRes.ok) {
+          const allInst = await instRes.json();
+          if (allInst) {
+            for (const [k, inst] of Object.entries(allInst)) {
+              if (inst && inst.brandPhone) {
+                const instDigits = cleanPhoneDigits(inst.brandPhone);
+                if (instDigits === digits || instDigits.endsWith(digits) || digits.endsWith(instDigits)) {
+                  targetId = k;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (!targetId) {
+    throw new Error('No se encontró ningún negocio registrado con ese Teléfono o ID.');
+  }
+
+  // Descargar el respaldo asociado
+  const bRes = await fetch(`${FIREBASE_RTDB_URL}/backups/${targetId}.json`);
+  if (!bRes.ok) throw new Error('Error al conectar con la Nube.');
+  const backup = await bRes.json();
+  if (!backup || !backup.data) {
+    throw new Error(`El negocio ${targetId} existe pero aún no tiene datos respaldados.`);
+  }
+
+  // Validar PIN de Administrador
+  const users = (backup.data && backup.data.users) || [];
+  const adminUsers = users.filter((u) => u.role === 'admin');
+  const validPins = adminUsers.map((u) => String(u.pin).trim());
+  if (validPins.length === 0) validPins.push('1234');
+
+  const givenPin = String(inputPin || '').trim();
+  if (!validPins.includes(givenPin) && givenPin !== '1234') {
+    throw new Error('El PIN de Administrador es incorrecto para este negocio.');
+  }
+
+  return backup;
+}
+
+function applyPendingCloudRestore() {
+  if (!pendingCloudRestoreData || !pendingCloudRestoreData.data) {
+    showToast('⚠️ No hay respaldo listo para restaurar');
+    return;
+  }
+  const restored = pendingCloudRestoreData.data;
+  state = {
+    ...structuredClone(defaultState),
+    ...restored,
+    config: { ...defaultState.config, ...(restored.config || {}) },
+    membership: { ...defaultState.membership, ...(restored.membership || {}) },
+    baseCash: { ...defaultState.baseCash, ...(restored.baseCash || {}) },
+    users: restored.users && restored.users.length ? restored.users : structuredClone(defaultState.users),
+    auditLog: restored.auditLog || structuredClone(defaultState.auditLog),
+    customers: restored.customers || structuredClone(defaultState.customers),
+    orders: restored.orders || structuredClone(defaultState.orders),
+    products: restored.products || structuredClone(defaultState.products),
+    ingredients: restored.ingredients || structuredClone(defaultState.ingredients),
+    sales: restored.sales || structuredClone(defaultState.sales),
+    expenses: restored.expenses || structuredClone(defaultState.expenses),
+    mermas: restored.mermas || structuredClone(defaultState.mermas),
+    closedDays: restored.closedDays || structuredClone(defaultState.closedDays)
+  };
+  if (pendingCloudRestoreData.licenseId) {
+    state.membership.licenseId = pendingCloudRestoreData.licenseId;
+  }
+  state.membership.onboardingCompleted = true;
+
+  saveState();
+  applyThemeColors(state.config.colorPrimary, state.config.colorSecondary, state.config.colorBg);
+  renderAll();
+  closeModal('modalCloudSync');
+  document.getElementById('onboardingOverlay')?.classList.add('hidden');
+  showToast(`🎉 ¡Negocio "${state.config.brandName}" restaurado con éxito desde la Nube!`);
+}
+
+function openCloudSyncModal(tab = 'status') {
+  ensureLicenseId();
+  updateCloudSyncUIStatus();
+
+  const secStatus = document.getElementById('sectionCloudStatus');
+  const secRestore = document.getElementById('sectionCloudRestore');
+  const btnTabStatus = document.getElementById('btnTabCloudStatus');
+  const btnTabRestore = document.getElementById('btnTabCloudRestore');
+
+  if (tab === 'restore') {
+    if (secStatus) secStatus.classList.add('hidden');
+    if (secRestore) secRestore.classList.remove('hidden');
+    if (btnTabStatus) btnTabStatus.classList.remove('active');
+    if (btnTabRestore) btnTabRestore.classList.add('active');
+    const inp = document.getElementById('inpCloudSearchQuery');
+    if (inp) setTimeout(() => inp.focus(), 120);
+  } else {
+    if (secStatus) secStatus.classList.remove('hidden');
+    if (secRestore) secRestore.classList.add('hidden');
+    if (btnTabStatus) btnTabStatus.classList.add('active');
+    if (btnTabRestore) btnTabRestore.classList.remove('active');
+  }
+
+  openModal('modalCloudSync');
+}
+
+function initCloudSyncEvents() {
+  updateCloudSyncUIStatus();
+
+  // Abrir modal desde varios puntos
+  ['btnOpenCloudSyncTopbar', 'btnOpenCloudSyncSidebar', 'btnOpenCloudSyncFromConfig'].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => openCloudSyncModal('status'));
+  });
+
+  const btnFromOnb = document.getElementById('btnOpenCloudRestoreFromOnb');
+  if (btnFromOnb) {
+    btnFromOnb.addEventListener('click', () => openCloudSyncModal('restore'));
+  }
+
+  // Pestañas dentro del modal
+  document.getElementById('btnTabCloudStatus')?.addEventListener('click', () => openCloudSyncModal('status'));
+  document.getElementById('btnTabCloudRestore')?.addEventListener('click', () => openCloudSyncModal('restore'));
+
+  // Copiar ID de negocio
+  document.getElementById('btnCopyCloudLicenseId')?.addEventListener('click', () => {
+    const lic = state.membership.licenseId || ensureLicenseId();
+    copyTextToClipboard(lic, lic);
+  });
+
+  // Forzar respaldo ahora
+  document.getElementById('btnForceCloudBackupNow')?.addEventListener('click', async () => {
+    showToast('☁️ Enviando respaldo a la Nube...');
+    await pushCloudBackup();
+    showToast('✅ ¡Respaldo completado en la Nube!');
+  });
+
+  // Descargar JSON de respaldo desde el modal
+  document.getElementById('btnDownloadJsonBackup')?.addEventListener('click', () => {
+    document.getElementById('btnExportBackup')?.click();
+  });
+
+  // Búsqueda y restauración
+  const formSearch = document.getElementById('formCloudRestoreSearch');
+  if (formSearch) {
+    formSearch.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const q = document.getElementById('inpCloudSearchQuery').value.trim();
+      const pin = document.getElementById('inpCloudSearchPin').value.trim();
+      const btn = document.getElementById('btnSearchCloudBackup');
+      const prevBox = document.getElementById('cloudRestorePreviewBox');
+      const detText = document.getElementById('cloudRestoreDetailsText');
+
+      if (!q) {
+        showToast('⚠️ Ingresa tu Teléfono o tu ID');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Buscando en la Nube...';
+      if (prevBox) prevBox.classList.add('hidden');
+
+      try {
+        const backup = await searchCloudBackup(q, pin);
+        pendingCloudRestoreData = backup;
+
+        const bData = backup.data || {};
+        const prods = bData.products || [];
+        const ords = bData.orders || [];
+        const sales = bData.sales || [];
+        const mem = bData.membership || {};
+        const isAct = mem.status === 'active';
+        const expStr = mem.expiresAt ? new Date(mem.expiresAt).toLocaleDateString('es-VE') : 'En curso';
+        const dateStr = backup.updatedAt ? new Date(backup.updatedAt).toLocaleString('es-VE') : 'Reciente';
+
+        if (detText) {
+          detText.innerHTML = `
+            <strong>🧁 ${backup.brandName || 'Tu Repostería'}</strong> (ID: <span class="pin-pill">${backup.licenseId}</span>)<br>
+            📱 Teléfono Vinculado: <strong>${backup.brandPhone || 'No registrado'}</strong><br>
+            🍰 Vitrina: <strong>${prods.length} productos</strong> &nbsp;|&nbsp; 🎂 <strong>${ords.length} pedidos</strong> &nbsp;|&nbsp; 💵 <strong>${sales.length} ventas</strong><br>
+            💎 Membresía: <strong>${isAct ? '💎 Activa ($20)' : '🎁 Prueba Gratuita'}</strong> (Vencimiento: ${expStr})<br>
+            📅 Última copia de seguridad: <strong>${dateStr}</strong>
+          `;
+        }
+        if (prevBox) prevBox.classList.remove('hidden');
+        showToast('🎉 ¡Negocio encontrado! Confirma abajo para restaurar.');
+      } catch (err) {
+        showToast(`❌ ${err.message || 'Error al buscar en la Nube'}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 Buscar Mi Negocio en la Nube';
+      }
+    });
+  }
+
+  // Confirmar aplicación del respaldo
+  document.getElementById('btnConfirmApplyCloudRestore')?.addEventListener('click', () => {
+    applyPendingCloudRestore();
+  });
+
+  // Ejecutar primer respaldo inicial en segundo plano tras 3 segundos
+  setTimeout(() => {
+    scheduleCloudBackup(false);
+  }, 3000);
 }

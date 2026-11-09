@@ -100,10 +100,13 @@
             <button type="button" class="btn-switch-user" id="btnOpenMembershipSidebar" style="flex:1; background:var(--primary); border:none;">
               💎 Membresía
             </button>
-            <button type="button" class="btn-switch-user" id="btnOpenTutorialSidebar" style="flex:1;">
-              🎓 Guía Paso a Paso
+            <button type="button" class="btn-switch-user" id="btnOpenCloudSyncSidebar" style="flex:1; background:rgba(13,148,136,0.3); border-color:#0d9488;">
+              ☁️ Respaldo Nube
             </button>
           </div>
+          <button type="button" class="btn-switch-user" id="btnOpenTutorialSidebar" style="width:100%; margin-top:6px;">
+            🎓 Guía Paso a Paso
+          </button>
           <a href="admin.html" target="_blank" class="btn-switch-user" style="display:block; text-align:center; text-decoration:none; margin-top:6px; font-size:11px; background:rgba(0,0,0,0.28);">
             🛡️ Panel Maestro Admin APKs
           </a>
@@ -167,6 +170,9 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="btn btn-outline btn-sm" id="btnOpenCloudSyncTopbar" title="Copia de Seguridad y Restauración en la Nube">
+            ☁️ <span id="topbarCloudSyncText">Nube al día</span>
+          </button>
           <button class="btn btn-primary btn-sm" id="btnOpenMembershipTopbar" title="Estado de Membresía, Prueba de 7 días y Pago Móvil BCV">
             💎 <span id="topbarMembershipText">Membresía (7d)</span>
           </button>
@@ -989,12 +995,22 @@
             <button type="button" class="btn btn-primary" id="btnSaveRatesConfig">💾 Guardar Tasas</button>
 
             <hr class="divider" />
-            <h3>💾 Copia de Seguridad (Respaldo)</h3>
-            <p class="helper-text">Tus datos se guardan automáticamente en este navegador. También puedes descargar un respaldo o restaurarlo en otra PC.</p>
+            <h3>☁️ Copia de Seguridad y Respaldo en la Nube (Firebase)</h3>
+            <p class="helper-text">
+              Tus productos, inventario, clientes, pedidos y ventas se respaldan <strong>automáticamente en tiempo real en la nube</strong>. Si cambias de teléfono o abres en una computadora, no perderás nada.
+            </p>
+            <div style="margin: 10px 0; background:var(--bg-muted); padding:10px 14px; border-radius:8px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <span style="font-size:12px; color:var(--text-muted);">Tu ID de Negocio:</span>
+                <strong id="cfgCloudLicenseId" style="font-size:14px; color:var(--primary); margin-left:6px;">REP-0000</strong>
+              </div>
+              <span id="cfgCloudSyncStatusText" style="font-size:12px; color:#0d9488; font-weight:700;">☁️ Nube: Sincronizado</span>
+            </div>
             <div class="header-actions" style="margin-top: 10px;">
-              <button type="button" class="btn btn-outline" id="btnExportBackup">⬇️ Descargar Respaldo (.json)</button>
+              <button type="button" class="btn btn-primary" id="btnOpenCloudSyncFromConfig">☁️ Administrar Respaldo en la Nube</button>
+              <button type="button" class="btn btn-outline" id="btnExportBackup">⬇️ Descargar Copia (.json)</button>
               <label class="btn btn-outline" style="cursor:pointer;">
-                ⬆️ Restaurar Respaldo
+                ⬆️ Restaurar Archivo .json
                 <input type="file" id="inputImportBackup" accept=".json" style="display:none;" />
               </label>
             </div>
@@ -1722,6 +1738,20 @@
 
       <!-- PASO 1: DATOS DEL NEGOCIO, COLORES Y TASAS -->
       <div id="onbStep1" class="onb-step-body">
+        <!-- BANNER DE RECUPERACIÓN DE DATOS (PARA CLIENTES QUE CAMBIAN DE TELÉFONO O BORRAN CACHÉ) -->
+        <div class="cloud-restore-banner" style="background: rgba(13, 148, 136, 0.12); border: 1.5px dashed #0d9488; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:26px;">☁️</span>
+            <div style="font-size:13px; color:var(--text-main);">
+              <strong>¿Ya tenías tu negocio registrado o cambiaste de celular?</strong><br>
+              <span style="color:var(--text-muted);">Recupera tus productos, ventas, inventario y membresía al instante.</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnOpenCloudRestoreFromOnb" style="border-color:#0d9488; color:#0d9488; font-weight:700;">
+            📥 Recuperar Mi Negocio
+          </button>
+        </div>
+
         <div style="text-align:center; margin-bottom:14px;">
           <h2 style="color:var(--secondary); font-size:21px;">👋 ¡Bienvenido! Paso 1: Configura tu Repostería</h2>
           <p class="subtitle">Personaliza el nombre, colores y tasas de cambio de tu negocio</p>
@@ -2119,6 +2149,108 @@
           <button type="submit" class="btn btn-success btn-lg">✅ Validar Pago</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: RESPALDO Y RESTAURACIÓN EN LA NUBE (FIREBASE) ==================== -->
+  <div class="modal-backdrop hidden no-print" id="modalCloudSync" style="z-index: 2200;">
+    <div class="modal-card" style="max-width: 580px; border-top: 5px solid #0d9488;">
+      <div class="modal-header">
+        <div>
+          <h3>☁️ Respaldo y Recuperación en la Nube</h3>
+          <small style="color:var(--text-muted); font-size:12px;">Tus datos seguros 24/7 en Firebase Realtime Database</small>
+        </div>
+        <button class="modal-close" data-close="modalCloudSync">✕</button>
+      </div>
+
+      <!-- Selector de Pestañas: 1. Estado / Respaldar | 2. Recuperar Negocio -->
+      <div style="display:flex; gap:8px; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+        <button type="button" class="btn btn-outline btn-sm active" id="btnTabCloudStatus" style="flex:1;">
+          ☁️ Estado de tu Negocio
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnTabCloudRestore" style="flex:1;">
+          📥 Recuperar Negocio en este Dispositivo
+        </button>
+      </div>
+
+      <!-- SECCIÓN 1: ESTADO DEL RESPALDO Y DATOS DE TU NEGOCIO -->
+      <div id="sectionCloudStatus">
+        <div style="background:var(--bg-muted); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:13px; color:var(--text-muted);">ID de tu Negocio en la Nube:</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span id="cloudModalLicenseId" style="font-size:14px; font-weight:800; background:var(--primary); color:#fff; padding:3px 10px; border-radius:6px;">REP-0000</span>
+              <button type="button" class="btn btn-outline btn-sm" id="btnCopyCloudLicenseId" title="Copiar ID">📋 Copiar</button>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:13px; color:var(--text-muted);">Teléfono / WhatsApp Vinculado:</span>
+            <strong id="cloudModalPhoneDisplay">No configurado</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:13px; color:var(--text-muted);">Último Respaldo Automático:</span>
+            <strong id="cloudModalLastBackupDisplay" style="color:#0d9488;">Comprobando...</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--text-muted);">Membresía / Licencia:</span>
+            <strong id="cloudModalStatusDisplay" style="color:var(--primary);">7 días de prueba</strong>
+          </div>
+        </div>
+
+        <div style="background:#f0fdfa; border:1px solid #ccfbf1; border-radius:10px; padding:12px; margin-bottom:14px; font-size:12.5px; color:#115e59;">
+          💡 <strong>Autoguardado Activo:</strong> Cada vez que registras una venta, agregas un producto o recibes un encargo, tus datos se respaldan automáticamente en Firebase sin que tengas que hacer nada.
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary" id="btnForceCloudBackupNow" style="flex:1;">
+            ☁️ Respaldar Todo Ahora
+          </button>
+          <button type="button" class="btn btn-outline" id="btnDownloadJsonBackup" style="flex:1;">
+            ⬇️ Descargar Copia .JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: RECUPERAR DATOS DESDE LA NUBE (POR CAMBIO DE TELÉFONO O BORRADO DE CACHÉ) -->
+      <div id="sectionCloudRestore" class="hidden">
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+          Si cambiaste de celular, borraste la caché o abriste el sistema en tu computadora, ingresa tu <strong>Teléfono / WhatsApp</strong> o tu <strong>ID de Negocio (ej. REP-4821)</strong> para restaurar todo inmediatamente:
+        </p>
+
+        <form id="formCloudRestoreSearch">
+          <div class="form-group">
+            <label>📱 Teléfono WhatsApp O ID de Negocio *</label>
+            <input type="text" id="inpCloudSearchQuery" required placeholder="Ej: 04127049393 o REP-4821" style="font-size:15px; font-weight:700;" />
+            <small class="field-hint">Ingresa el mismo número o código que registraste al iniciar.</small>
+          </div>
+
+          <div class="form-group">
+            <label>🔑 PIN de Administrador (Para verificar tu identidad) *</label>
+            <input type="password" id="inpCloudSearchPin" required maxlength="12" placeholder="PIN de Administrador (ej. 1234)" style="font-size:15px; text-align:center;" />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSearchCloudBackup">
+            🔍 Buscar Mi Negocio en la Nube
+          </button>
+        </form>
+
+        <!-- Preview del Respaldo Encontrado -->
+        <div id="cloudRestorePreviewBox" class="hidden" style="margin-top:14px; background:var(--bg-muted); border:1.5px solid #0d9488; border-radius:12px; padding:14px;">
+          <div style="font-size:15px; font-weight:800; color:#0f766e; margin-bottom:6px;">
+            🎉 ¡Negocio Encontrado en la Nube!
+          </div>
+          <div id="cloudRestoreDetailsText" style="font-size:13px; margin-bottom:12px; line-height:1.6;">
+            <!-- Detalles dinámicos -->
+          </div>
+          <button type="button" class="btn btn-success btn-block btn-lg" id="btnConfirmApplyCloudRestore">
+            ⚡ Sí, Restaurar y Reanudar Mi Negocio Aquí
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top:14px;">
+        <button type="button" class="btn btn-outline" data-close="modalCloudSync">Cerrar</button>
+      </div>
     </div>
   </div>
 

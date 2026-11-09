@@ -312,6 +312,7 @@
               <th>Días Restantes / Vencimiento</th>
               <th>Última Ref. Pago Móvil</th>
               <th>PIN Desbloqueo</th>
+              <th>☁️ Respaldo Nube</th>
               <th>Acciones de Administrador</th>
             </tr>
           </thead>
@@ -482,6 +483,19 @@
           if (inst.status === 'expired' || diffDays <= 0) statusLabel = '⚠️ Vencida';
           if (inst.status === 'suspended') statusLabel = '🚫 Suspendida';
 
+          const stats = inst.stats || {};
+          const prodCount = typeof stats.products === 'number' ? stats.products : null;
+          const salesCount = typeof stats.sales === 'number' ? stats.sales : null;
+          const backupTimeStr = inst.lastBackupAt ? new Date(inst.lastBackupAt).toLocaleString('es-VE', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+          const backupCell = backupTimeStr
+            ? `<strong>☁️ ${backupTimeStr}</strong><br><small style="color:var(--muted);">${prodCount !== null ? `${prodCount} prods, ${salesCount} vtas` : 'Al día'}</small>`
+            : `<span style="color:var(--muted); font-size:12px;">Sin datos aún</span>`;
+
+          const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
+          const recoveryWaUrl = cleanPhone
+            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola *${inst.brandName}*, para recuperar tu negocio en cualquier teléfono entra a https://reposteria-sistema-pos.web.app y coloca tu ID de Negocio: *${inst.licenseId}* o tu número de WhatsApp.`)}`
+            : null;
+
           return `
             <tr>
               <td><strong>${inst.licenseId}</strong></td>
@@ -494,13 +508,18 @@
               </td>
               <td>${refText}</td>
               <td><span class="pin-pill">${pinText}</span></td>
+              <td>${backupCell}</td>
               <td>
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
                   <button class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${inst.licenseId}')" title="Activar Membresía 30 días">
                     ✅ Activar 30d
                   </button>
                   <button class="btn btn-outline btn-sm" onclick="adminAction('grant_days', '${inst.licenseId}', 7)" title="Dar 7 días extra">
                     +7d Prueba
+                  </button>
+                  ${recoveryWaUrl ? `<a href="${recoveryWaUrl}" target="_blank" class="btn btn-outline btn-sm" title="Enviar ID de Negocio por WhatsApp">📲 Enviar ID</a>` : ''}
+                  <button class="btn btn-outline btn-sm" onclick="downloadBackupJsonAdmin('${inst.licenseId}', '${inst.brandName}')" title="Descargar copia del negocio en JSON">
+                    💾 JSON
                   </button>
                   <button class="btn btn-warning btn-sm" onclick="adminAction('suspend', '${inst.licenseId}')" title="Suspender / Bloquear APK">
                     🚫 Bloquear
@@ -612,6 +631,28 @@
       } catch (_) {}
       loadAdminData();
     });
+
+    async function downloadBackupJsonAdmin(licenseId, brandName) {
+      if (!FIREBASE_RTDB_URL) return;
+      try {
+        const res = await fetch(`${FIREBASE_RTDB_URL}/backups/${licenseId}.json`);
+        if (!res.ok) throw new Error('Error de red al consultar respaldo');
+        const data = await res.json();
+        if (!data || !data.data) {
+          alert(`El negocio ${brandName} (${licenseId}) aún no ha realizado su primer respaldo en la nube.`);
+          return;
+        }
+        const str = JSON.stringify(data.data, null, 2);
+        const blob = new Blob([str], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Respaldo_${brandName.replace(/[^a-zA-Z0-9]/g, '_')}_${licenseId}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (err) {
+        alert('Error al descargar el respaldo: ' + (err.message || err));
+      }
+    }
 
     document.getElementById('btnRefreshAdmin').addEventListener('click', loadAdminData);
 
