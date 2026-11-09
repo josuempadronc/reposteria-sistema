@@ -549,6 +549,20 @@ function initTopbarEvents() {
     document.getElementById('btnPwaInstallPrompt').classList.add('hidden');
   });
 
+  // Ocultar botón de APK en vista móvil (solo accesible en versión web/escritorio)
+  function checkApkButtonVisibility() {
+    const btn = document.getElementById('btnOpenApkModal');
+    if (!btn) return;
+    const isMobile = window.innerWidth <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      btn.style.setProperty('display', 'none', 'important');
+    } else {
+      btn.style.removeProperty('display');
+    }
+  }
+  checkApkButtonVisibility();
+  window.addEventListener('resize', checkApkButtonVisibility);
+
   document.getElementById('btnOpenApkModal').addEventListener('click', async () => {
     openModal('modalApk');
     document.getElementById('cfgApiBaseUrl').value = state.config.apiBaseUrl || '';

@@ -1713,6 +1713,10 @@ body {
 
 /* ==================== DISEÑO RESPONSIVO Y APP MÓVIL ==================== */
 @media (max-width: 1024px) {
+  #btnOpenApkModal {
+    display: none !important;
+  }
+
   .app-layout {
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: 76px;
