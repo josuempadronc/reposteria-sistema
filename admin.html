@@ -215,6 +215,33 @@
       display: block;
       margin-top: 4px;
     }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+      70% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .admin-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #38bdf8;
+      border-radius: 12px;
+      padding: 14px 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 9999;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideInToast 0.25s ease-out;
+    }
+    @keyframes slideInToast {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -264,11 +291,30 @@
         </div>
       </div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <button class="btn btn-outline" id="btnRefreshAdmin">🔄 Actualizar Lista</button>
+        <button class="btn btn-outline btn-sm" id="btnToggleNotifications">🔔 Activar Notificaciones</button>
+        <button class="btn btn-outline btn-sm" id="btnTestSound" title="Probar sonido de campana de pago">🔊 Probar Alerta</button>
+        <button class="btn btn-outline btn-sm" id="btnRefreshAdmin">🔄 Actualizar</button>
         <button class="btn btn-danger btn-sm" id="btnAdminLogout" style="padding:8px 12px;">🔒 Salir</button>
-        <a href="index.html" class="btn btn-primary">⚡ Ir a PostFlow App ➔</a>
+        <a href="index.html" class="btn btn-primary btn-sm">⚡ Ir a App ➔</a>
       </div>
     </header>
+
+    <!-- BANNER DE ALERTA DE PAGO EN VIVO -->
+    <div id="adminLiveAlertBanner" style="display:none; background:linear-gradient(90deg, #1e293b, #0f172a); border:2px solid #f59e0b; border-radius:14px; padding:14px 18px; margin-bottom:20px; animation:pulseGlow 2s infinite; box-shadow:0 8px 24px rgba(245,158,11,0.25);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:28px;">🔔</span>
+          <div>
+            <strong id="liveAlertBannerTitle" style="font-size:15px; color:#fbbf24; display:block;">¡Nuevo Pago Móvil recibido en tiempo real!</strong>
+            <span id="liveAlertBannerDetail" style="font-size:13px; color:#f8fafc;">Negocio: <strong id="alertBrandName">-</strong> | Ref: <span class="ref-pill" id="alertRefPill">#----</span> | Monto: <strong id="alertAmountBs">Bs. 0,00</strong></span>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-success btn-sm" id="btnQuickApproveLive">✅ Aprobar Inmediatamente</button>
+          <button class="btn btn-outline btn-sm" onclick="dismissLiveBanner()">✕ Ocultar</button>
+        </div>
+      </div>
+    </div>
 
     <div class="kpi-grid">
       <div class="kpi-card">
@@ -364,6 +410,172 @@
   <script>
     const FIREBASE_RTDB_URL = 'https://reposteria-sistema-pos-default-rtdb.firebaseio.com/reposteria_licenses';
     let cachedInstallationsMap = {};
+    let knownPaymentKeys = new Set();
+    let hasLoadedInitialData = false;
+    let latestPendingInst = null;
+
+    // ALERTA SONORA CON WEB AUDIO API (CAMPANA DOBLE DE CAJA REGISTRADORA)
+    function playAdminPaymentSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+
+        const playTone = (freq, start, duration, vol = 0.28) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+          gain.gain.setValueAtTime(vol, ctx.currentTime + start);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + start);
+          osc.stop(ctx.currentTime + start + duration);
+        };
+
+        // Ráfaga de campanas alegres (Do5 - Mi5 - Sol5 - Do6)
+        playTone(523.25, 0.00, 0.20, 0.25);
+        playTone(659.25, 0.12, 0.20, 0.25);
+        playTone(783.99, 0.24, 0.30, 0.30);
+        playTone(1046.50, 0.38, 0.45, 0.35);
+
+        // Segunda campana de confirmación bancaria
+        setTimeout(() => {
+          try {
+            const ctx2 = new AudioCtx();
+            const osc = ctx2.createOscillator();
+            const gain = ctx2.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1318.51, ctx2.currentTime); // Mi6 brillante
+            gain.gain.setValueAtTime(0.3, ctx2.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx2.destination);
+            osc.start(ctx2.currentTime);
+            osc.stop(ctx2.currentTime + 0.51);
+          } catch (_) {}
+        }, 420);
+      } catch (e) {
+        console.warn('Audio no permitido o no soportado:', e);
+      }
+    }
+
+    function playSuccessChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        [587.33, 880, 1174.66].forEach((f, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, ctx.currentTime + idx * 0.1);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.1);
+          osc.stop(ctx.currentTime + idx * 0.1 + 0.31);
+        });
+      } catch (_) {}
+    }
+
+    function showAdminToast(msg) {
+      const existing = document.querySelector('.admin-toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'admin-toast';
+      toast.innerHTML = `<span>${msg}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    // NOTIFICACIONES NATIVAS DEL SISTEMA (DESKTOP / PUSH)
+    function updateNotificationButtonUI() {
+      const btn = document.getElementById('btnToggleNotifications');
+      if (!btn) return;
+      if (!('Notification' in window)) {
+        btn.style.display = 'none';
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        btn.innerHTML = '🔔 Notificaciones: <strong style="color:#34d399;">ACTIVAS</strong>';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline');
+      } else if (Notification.permission === 'denied') {
+        btn.innerHTML = '🔕 Notificaciones: <strong style="color:#f87171;">BLOQUEADAS</strong>';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline');
+      } else {
+        btn.innerHTML = '🔔 Activar Notificaciones';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline');
+      }
+    }
+
+    async function toggleNotificationPermission() {
+      if (!('Notification' in window)) {
+        alert('Este navegador no soporta notificaciones de escritorio.');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        playAdminPaymentSound();
+        new Notification('🔔 PostFlow Panel Maestro', {
+          body: '¡Las notificaciones en tiempo real ya están activas! Recibirás alertas cada vez que un cliente reporte un Pago Móvil.',
+          icon: 'icon-postflow.png'
+        });
+        showAdminToast('🔔 Notificaciones de escritorio ya activas');
+      } else {
+        const perm = await Notification.requestPermission();
+        updateNotificationButtonUI();
+        if (perm === 'granted') {
+          playAdminPaymentSound();
+          new Notification('🔔 PostFlow: Notificaciones Activadas', {
+            body: '¡Excelente! Ahora recibirás una alerta inmediata con cada nuevo pago reportado.',
+            icon: 'icon-postflow.png'
+          });
+          showAdminToast('✅ Notificaciones de escritorio activadas');
+        }
+      }
+    }
+
+    function showAdminBrowserNotification(inst, p) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(`💰 PostFlow: ¡Nuevo Pago Recibido!`, {
+            body: `Negocio: ${inst.brandName}\nRef: #${p.refDigits || '----'} · Monto: Bs. ${Number(p.amountBs || 0).toFixed(2)}\nBanco: ${p.bankName || 'Pago Móvil'}`,
+            icon: 'icon-postflow.png',
+            tag: `payment-${inst.licenseId}-${p.refDigits}`
+          });
+        } catch (_) {}
+      }
+    }
+
+    function showLiveAlertBanner(inst, p) {
+      latestPendingInst = inst;
+      const banner = document.getElementById('adminLiveAlertBanner');
+      const brandEl = document.getElementById('alertBrandName');
+      const refEl = document.getElementById('alertRefPill');
+      const amountEl = document.getElementById('alertAmountBs');
+      if (brandEl) brandEl.textContent = inst.brandName;
+      if (refEl) refEl.textContent = `#${p.refDigits || '----'}`;
+      if (amountEl) amountEl.textContent = `Bs. ${Number(p.amountBs || 0).toFixed(2)}`;
+      if (banner) banner.style.display = 'block';
+
+      const btnQuick = document.getElementById('btnQuickApproveLive');
+      if (btnQuick) {
+        btnQuick.onclick = () => {
+          adminAction('approve_payment', inst.licenseId);
+          dismissLiveBanner();
+        };
+      }
+    }
+
+    function dismissLiveBanner() {
+      const banner = document.getElementById('adminLiveAlertBanner');
+      if (banner) banner.style.display = 'none';
+    }
 
     function generateUnlockPinClient(licenseId, refDigits) {
       const cleanId = String(licenseId || 'REP').replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -454,7 +666,39 @@
       document.getElementById('kpiActiveApks').textContent = activeList.length;
       document.getElementById('kpiTotalRevenue').textContent = `Ingresos validados: $${totalPaymentsCount * 20} USD (${totalPaymentsCount} pagos)`;
 
-      // Renderizar bandeja de pendientes
+      // DETECCIÓN REACTIVA DE NUEVOS PAGOS EN TIEMPO REAL
+      const currentKeys = new Set();
+      let newestItem = null;
+
+      pendingList.forEach((inst) => {
+        const p = inst.pendingPayment || {};
+        const key = `${inst.licenseId}_${p.refDigits || 'none'}_${p.reportedAt || ''}`;
+        currentKeys.add(key);
+
+        if (hasLoadedInitialData && !knownPaymentKeys.has(key)) {
+          newestItem = { inst, p };
+        }
+      });
+
+      if (newestItem) {
+        playAdminPaymentSound();
+        showAdminBrowserNotification(newestItem.inst, newestItem.p);
+        showLiveAlertBanner(newestItem.inst, newestItem.p);
+        showAdminToast(`🔔 ¡Nuevo Pago Recibido! Negocio: "${newestItem.inst.brandName}" (Ref #${newestItem.p.refDigits})`);
+      }
+
+      // Actualizar Título Dinámico de la Pestaña
+      if (pendingList.length > 0) {
+        document.title = `(${pendingList.length}) 🔔 NUEVO PAGO RECIBIDO — PostFlow Maestro`;
+      } else {
+        document.title = `PostFlow — Panel Maestro de Administración`;
+        dismissLiveBanner();
+      }
+
+      knownPaymentKeys = currentKeys;
+      hasLoadedInitialData = true;
+
+      // Renderizar bandeja de pendientes con tarjeta enriquecida
       const pendingBox = document.getElementById('pendingPaymentsContainer');
       if (pendingList.length === 0) {
         pendingBox.innerHTML = `<div style="padding:18px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:12px;">✅ No hay referencias de Pago Móvil pendientes por verificar en este momento.</div>`;
@@ -463,34 +707,74 @@
           .map((inst) => {
             const p = inst.pendingPayment || {};
             const pin = generateUnlockPinClient(inst.licenseId, p.refDigits);
-            const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
+            const cleanPhone = (inst.brandPhone || p.payerPhone || '').replace(/[^0-9]/g, '');
+            const reportedTime = p.reportedAt
+              ? new Date(p.reportedAt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+              : 'Reciente';
+
             const waMsg = encodeURIComponent(
-              `✅ ¡Hola *${inst.brandName}*! Hemos validado tu Pago Móvil (Ref: #${p.refDigits}). Tu membresía ya está activa por 30 días. Si estás sin conexión al servidor, tu PIN Maestro de activación es: *${pin}*`
+              `✅ ¡Hola *${inst.brandName}*! Hemos validado tu Pago Móvil (Ref: #${p.refDigits || ''}). Tu membresía PostFlow ya está activa por 30 días. Si estás sin conexión al servidor, tu PIN Maestro de activación inmediata es: *${pin}*`
             );
             const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${waMsg}` : null;
 
             return `
-              <div class="pending-card">
-                <div>
-                  <div style="font-size:15px; font-weight:800; margin-bottom:4px;">
-                    🧁 ${inst.brandName} <small style="color:var(--muted);">(${inst.licenseId})</small>
+              <div class="pending-card" style="border:1.5px solid var(--warning); background:rgba(245, 158, 11, 0.08); border-radius:14px; padding:16px; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                  <div>
+                    <div style="font-size:16px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+                      🏬 ${inst.brandName || 'PostFlow Negocio'}
+                      <span style="font-size:11.5px; background:rgba(2,132,199,0.2); color:#38bdf8; padding:2px 8px; border-radius:6px; font-weight:700;">${inst.licenseId}</span>
+                    </div>
+                    <div style="font-size:12.5px; color:var(--muted); margin-top:3px;">
+                      📱 WhatsApp: <strong>${inst.brandPhone || 'No registrado'}</strong> ${p.payerPhone ? `· Pagador: <strong>${p.payerPhone}</strong>` : ''}
+                    </div>
                   </div>
-                  <div style="font-size:13px; margin-bottom:6px;">
-                    🔢 Últimos dígitos Ref: <span class="ref-pill">#${p.refDigits || '----'}</span>
-                    &nbsp;|&nbsp; 💰 Monto: <strong>Bs. ${Number(p.amountBs || 0).toFixed(2)}</strong> (Tasa € BCV: ${p.rateEurBcv || '-'})
-                  </div>
-                  <div style="font-size:12px; color:var(--muted);">
-                    🔑 PIN de Activación Offline: <span class="pin-pill">${pin}</span>
+                  <div style="text-align:right;">
+                    <span style="font-size:11px; background:#f59e0b; color:#0f172a; padding:3px 8px; border-radius:6px; font-weight:800;">
+                      ⏳ ESPERANDO TU APROBACIÓN
+                    </span>
+                    <div style="font-size:11.5px; color:var(--muted); margin-top:4px;">
+                      🕒 Reportado: ${reportedTime}
+                    </div>
                   </div>
                 </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                  <button class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${inst.licenseId}')">
-                    ✅ Validar y Activar (+30d)
-                  </button>
-                  ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm">💬 Enviar PIN por WA</a>` : ''}
-                  <button class="btn btn-danger btn-sm" onclick="adminAction('reject_payment', '${inst.licenseId}')">
-                    ❌ Rechazar
-                  </button>
+
+                <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; font-size:12.5px;">
+                  <div>
+                    <span style="color:var(--muted); display:block; font-size:11px;">ÚLTIMOS DÍGITOS REF:</span>
+                    <span class="ref-pill" style="font-size:16px; font-weight:800; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px;">#${p.refDigits || '----'}</span>
+                  </div>
+                  <div>
+                    <span style="color:var(--muted); display:block; font-size:11px;">BANCO EMISOR:</span>
+                    <strong style="color:#f8fafc;">${p.bankName || 'Pago Móvil'}</strong>
+                  </div>
+                  <div>
+                    <span style="color:var(--muted); display:block; font-size:11px;">MONTO EN BS:</span>
+                    <strong style="color:#34d399; font-size:15px;">Bs. ${Number(p.amountBs || 0).toFixed(2)}</strong>
+                  </div>
+                  <div>
+                    <span style="color:var(--muted); display:block; font-size:11px;">TASA EURO BCV:</span>
+                    <span>${p.rateEurBcv ? `${p.rateEurBcv} Bs/€` : 'Oficial'}</span>
+                  </div>
+                  <div>
+                    <span style="color:var(--muted); display:block; font-size:11px;">PIN MAESTRO:</span>
+                    <span class="pin-pill">${pin}</span>
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                  <div style="font-size:12px; color:#94a3b8;">
+                    💡 Al presionar <strong>"Aprobar y Activar"</strong> la app del cliente se desbloquea en vivo.
+                  </div>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${inst.licenseId}')">
+                      ✅ Aprobar y Activar (+30d)
+                    </button>
+                    ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm">💬 Notificar por WhatsApp</a>` : ''}
+                    <button class="btn btn-danger btn-sm" onclick="adminAction('reject_payment', '${inst.licenseId}')">
+                      ❌ Rechazar
+                    </button>
+                  </div>
                 </div>
               </div>
             `;
@@ -501,7 +785,7 @@
       // Renderizar tabla general
       const tbody = document.getElementById('apksTableBody');
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Aún no hay APKs registradas. Abre la aplicación principal para registrar la primera instalación.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--muted); padding:20px;">Aún no hay APKs registradas. Abre la aplicación principal para registrar la primera instalación.</td></tr>`;
         return;
       }
 
@@ -530,13 +814,13 @@
 
           const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
           const recoveryWaUrl = cleanPhone
-            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola *${inst.brandName}*, para recuperar tu negocio en cualquier teléfono entra a https://reposteria-sistema-pos.web.app y coloca tu ID de Negocio: *${inst.licenseId}* o tu número de WhatsApp.`)}`
+            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola *${inst.brandName}*, para acceder a tu sistema PostFlow entra a https://reposteria-sistema-pos.web.app con tu ID: *${inst.licenseId}*.`)}`
             : null;
 
           return `
             <tr>
               <td><strong>${inst.licenseId}</strong></td>
-              <td><strong>🧁 ${inst.brandName}</strong></td>
+              <td><strong>🏬 ${inst.brandName}</strong></td>
               <td>${inst.brandPhone || '-'}</td>
               <td><span class="badge ${inst.status}">${statusLabel}</span></td>
               <td>
@@ -575,10 +859,11 @@
     async function adminAction(action, licenseId, days = 7) {
       if (action === 'delete' && !confirm(`¿Eliminar el registro de la APK ${licenseId}?`)) return;
 
+      const inst = cachedInstallationsMap[licenseId] || { licenseId, payments: [] };
+
       // 1. Ejecutar acción en Firebase Realtime Database (Nube 24/7)
       if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
         try {
-          const inst = cachedInstallationsMap[licenseId] || { licenseId, payments: [] };
           if (action === 'approve_payment') {
             const newExp = new Date(Date.now() + 30 * 86400000).toISOString();
             const payments = Array.isArray(inst.payments) ? [...inst.payments] : [];
@@ -597,6 +882,8 @@
                 payments
               })
             });
+            playSuccessChime();
+            showAdminToast(`✅ ¡Membresía activada (+30 días) para ${inst.brandName || licenseId}!`);
           } else if (action === 'reject_payment') {
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
               method: 'PATCH',
@@ -606,6 +893,7 @@
                 pendingPayment: null
               })
             });
+            showAdminToast(`❌ Pago rechazado para ${inst.brandName || licenseId}`);
           } else if (action === 'grant_days') {
             const newExp = new Date(Date.now() + Number(days || 7) * 86400000).toISOString();
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
@@ -616,6 +904,7 @@
                 expiresAt: newExp
               })
             });
+            showAdminToast(`🎁 +${days} días de prueba otorgados a ${inst.brandName || licenseId}`);
           } else if (action === 'suspend') {
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
               method: 'PATCH',
@@ -624,10 +913,12 @@
                 status: 'suspended'
               })
             });
+            showAdminToast(`🚫 APK ${licenseId} suspendida`);
           } else if (action === 'delete') {
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
               method: 'DELETE'
             });
+            showAdminToast(`🗑️ Registro eliminado`);
           }
         } catch (e) {
           console.warn('Error actualizando Firebase RTDB:', e);
@@ -701,6 +992,7 @@
       if (isAuth) {
         if (overlay) overlay.style.display = 'none';
         if (main) main.style.display = 'block';
+        updateNotificationButtonUI();
         loadAdminData();
       } else {
         if (overlay) overlay.style.display = 'flex';
@@ -728,14 +1020,24 @@
       checkAdminAuth();
     });
 
-    document.getElementById('btnRefreshAdmin').addEventListener('click', loadAdminData);
+    document.getElementById('btnRefreshAdmin').addEventListener('click', () => {
+      loadAdminData();
+      showAdminToast('🔄 Datos actualizados');
+    });
+
+    document.getElementById('btnTestSound')?.addEventListener('click', () => {
+      playAdminPaymentSound();
+      showAdminToast('🔊 Sonido de alerta de pago reproducido');
+    });
+
+    document.getElementById('btnToggleNotifications')?.addEventListener('click', toggleNotificationPermission);
 
     checkAdminAuth();
     setInterval(() => {
       if (sessionStorage.getItem('postflow_admin_auth') === 'granted') {
         loadAdminData();
       }
-    }, 4000);
+    }, 3000);
   </script>
 </body>
 </html>

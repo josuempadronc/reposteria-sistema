@@ -3278,6 +3278,27 @@ function playAlertBeep() {
   } catch (_) {}
 }
 
+function playSuccessChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // Do, Mi, Sol, Do agudo (Acorde Mayor de éxito)
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.11);
+      gain.gain.setValueAtTime(0.22, ctx.currentTime + idx * 0.11);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.11 + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.11);
+      osc.stop(ctx.currentTime + idx * 0.11 + 0.36);
+    });
+  } catch (_) {}
+}
+
 function getDetailedActiveAlerts() {
   const todayStr = new Date().toISOString().split('T')[0];
   const zeroProducts = state.products.filter((p) => p.stock <= 0);
@@ -3563,11 +3584,15 @@ async function syncLicenseWithAdminServer() {
     renderMembershipStatus();
 
     if (prevStatus !== 'active' && remote.status === 'active') {
+      state.membership.pendingPayment = null;
+      const card = document.getElementById('valModalPendingCard');
+      if (card) card.classList.add('hidden');
       const notice = document.getElementById('valModalPendingNotice');
       if (notice) notice.classList.add('hidden');
       closeModal('modalValidatePayment');
       closeModal('modalMembership');
-      showToast('🎉 ¡Tu Pago Móvil fue validado por el Administrador! Membresía activa por 30 días.');
+      playSuccessChime();
+      showToast('🎉 ¡Tu Pago Móvil fue APROBADO por el Administrador! Membresía activa por 30 días.');
     } else if (remote.status === 'suspended') {
       openMembershipModal(true);
     }
@@ -4240,6 +4265,16 @@ function initOnboardingAndMembershipEvents() {
       updateMembershipBsCalculation();
       document.getElementById('paymentRefDigitsInput').value = '';
       document.getElementById('paymentUnlockPinInput').value = '';
+
+      const pendingCard = document.getElementById('valModalPendingCard');
+      const pendingPill = document.getElementById('valModalPendingRefPill');
+      if (state.membership.status === 'pending_validation' && state.membership.pendingPayment) {
+        if (pendingPill) pendingPill.textContent = `#${state.membership.pendingPayment.refDigits || '----'}`;
+        if (pendingCard) pendingCard.classList.remove('hidden');
+      } else {
+        if (pendingCard) pendingCard.classList.add('hidden');
+      }
+
       openModal('modalValidatePayment');
       setTimeout(() => document.getElementById('paymentRefDigitsInput').focus(), 120);
     });
@@ -4259,7 +4294,9 @@ function initOnboardingAndMembershipEvents() {
       e.preventDefault();
       const licenseId = ensureLicenseId();
       const rawRef = (document.getElementById('paymentRefDigitsInput').value || '').replace(/[^0-9]/g, '');
-      const unlockPin = (document.getElementById('paymentUnlockPinInput').value || '').trim();
+      const bankName = document.getElementById('paymentBankInput')?.value || 'Pago Móvil';
+      const payerPhone = (document.getElementById('paymentPayerPhoneInput')?.value || '').trim();
+      const unlockPin = (document.getElementById('paymentUnlockPinInput')?.value || '').trim();
 
       if (rawRef.length < 4) {
         showToast('⚠️ Ingresa al menos los últimos 4 dígitos numéricos de la referencia');
@@ -4275,86 +4312,56 @@ function initOnboardingAndMembershipEvents() {
         state.membership.status = 'active';
         state.membership.onboardingCompleted = true;
         state.membership.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        state.membership.pendingPayment = null;
         saveState();
         renderAll();
         syncLicenseWithAdminServer();
         closeModal('modalValidatePayment');
         closeModal('modalMembership');
+        playSuccessChime();
         showToast(`✅ ¡PIN Maestro verificado (Ref #${rawRef})! Membresía activa por 30 días.`);
         return;
       }
 
-      // 1. Enviar solicitud de validación a Firebase Realtime Database (para administración online desde cualquier lugar)
-      let handledByCloud = false;
+      const paymentEntry = {
+        refDigits: rawRef,
+        bankName,
+        payerPhone,
+        amountBs,
+        amountUSD: 20,
+        rateEurBcv: rateUsed,
+        reportedAt: new Date().toISOString()
+      };
+
+      // Registrar en estado local en espera de aprobación del administrador
+      state.membership.status = 'pending_validation';
+      state.membership.pendingPayment = paymentEntry;
+      saveState();
+      renderAll();
+
+      // 1. Enviar solicitud de validación a Firebase Realtime Database para notificar al Panel Maestro en tiempo real
       if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
         try {
-          let manualReq = true;
-          try {
-            const cfgRes = await fetch(`${FIREBASE_RTDB_URL}/config/requireManualApproval.json`);
-            if (cfgRes.ok) {
-              const cfgVal = await cfgRes.json();
-              if (cfgVal === false) manualReq = false;
-            }
-          } catch (_) {}
-
-          const paymentEntry = {
-            refDigits: rawRef,
-            amountBs,
-            rateEurBcv: rateUsed,
-            reportedAt: new Date().toISOString()
-          };
-
-          if (!manualReq) {
-            const newExp = new Date(Date.now() + 30 * 86400000).toISOString();
-            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                licenseId,
-                brandName: state.config.brandName || 'Dulce Repostería',
-                brandPhone: state.config.brandPhone || '',
-                status: 'active',
-                expiresAt: newExp,
-                pendingPayment: null,
-                lastSyncAt: new Date().toISOString()
-              })
-            });
-            state.membership.status = 'active';
-            state.membership.onboardingCompleted = true;
-            state.membership.expiresAt = newExp;
-            saveState();
-            renderAll();
-            closeModal('modalValidatePayment');
-            closeModal('modalMembership');
-            showToast(`✅ ¡Pago validado (Ref #${rawRef})! Tu membresía está activa por 30 días.`);
-            handledByCloud = true;
-          } else {
-            await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                licenseId,
-                brandName: state.config.brandName || 'Dulce Repostería',
-                brandPhone: state.config.brandPhone || '',
-                status: 'pending_validation',
-                pendingPayment: paymentEntry,
-                lastSyncAt: new Date().toISOString()
-              })
-            });
-            state.membership.status = 'pending_validation';
-            saveState();
-            renderAll();
-            const notice = document.getElementById('valModalPendingNotice');
-            if (notice) notice.classList.remove('hidden');
-            showToast(`⏳ Referencia #${rawRef} enviada al Panel de Administración Online para aprobación.`);
-            handledByCloud = true;
-          }
-        } catch (_) {}
+          await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              licenseId,
+              brandName: state.config.brandName || 'PostFlow',
+              brandPhone: state.config.brandPhone || '',
+              status: 'pending_validation',
+              pendingPayment: paymentEntry,
+              lastSyncAt: new Date().toISOString()
+            })
+          });
+        } catch (e) {
+          console.warn('Error enviando pago a Firebase RTDB:', e);
+        }
       }
 
       // 2. Enviar solicitud también al servidor local (/api/licenses/report-payment) si está disponible
       try {
-        const res = await fetch(getApiUrl('/api/licenses/report-payment'), {
+        await fetch(getApiUrl('/api/licenses/report-payment'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4362,49 +4369,26 @@ function initOnboardingAndMembershipEvents() {
             brandName: state.config.brandName,
             brandPhone: state.config.brandPhone || '',
             refDigits: rawRef,
+            bankName,
+            payerPhone,
             unlockPin,
             amountBs,
             rateEurBcv: rateUsed
           })
         });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.approved) {
-            state.membership.status = 'active';
-            state.membership.onboardingCompleted = true;
-            state.membership.expiresAt = data.installation.expiresAt;
-            saveState();
-            renderAll();
-            closeModal('modalValidatePayment');
-            closeModal('modalMembership');
-            showToast(`✅ ¡Pago validado (Ref #${rawRef})! Tu membresía está activa por 30 días.`);
-            return;
-          } else if (data.pending) {
-            state.membership.status = 'pending_validation';
-            saveState();
-            renderAll();
-            const notice = document.getElementById('valModalPendingNotice');
-            if (notice) notice.classList.remove('hidden');
-            if (!handledByCloud) {
-              showToast(`⏳ Referencia #${rawRef} enviada al Panel de Administración para aprobación.`);
-            }
-            return;
-          }
-        }
       } catch (_) {}
 
-      if (handledByCloud) return;
+      // Mostrar tarjeta de pago reportado en la ventana modal
+      const pendingCard = document.getElementById('valModalPendingCard');
+      const pendingPill = document.getElementById('valModalPendingRefPill');
+      if (pendingPill) pendingPill.textContent = `#${rawRef}`;
+      if (pendingCard) pendingCard.classList.remove('hidden');
 
-      // Si está sin conexión al servidor local y no ingresó PIN, activar o pedir PIN:
-      state.membership.status = 'active';
-      state.membership.onboardingCompleted = true;
-      state.membership.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      saveState();
-      renderAll();
-      closeModal('modalValidatePayment');
-      closeModal('modalMembership');
-      showToast(`✅ ¡Referencia #${rawRef} registrada! Membresía activada por 30 días.`);
+      const notice = document.getElementById('valModalPendingNotice');
+      if (notice) notice.classList.remove('hidden');
+
+      playAlertBeep();
+      showToast(`⏳ Pago registrado (Ref #${rawRef}). Notificación enviada al Administrador.`);
     });
   }
 

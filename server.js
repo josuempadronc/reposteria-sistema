@@ -300,6 +300,8 @@ const server = http.createServer(async (req, res) => {
     inst.status = 'pending_validation';
     inst.pendingPayment = {
       refDigits,
+      bankName: body.bankName || 'Pago Móvil',
+      payerPhone: body.payerPhone || '',
       amountUSD: 20,
       rateEurBcv: body.rateEurBcv || 52.5,
       amountBs: body.amountBs || 1050,

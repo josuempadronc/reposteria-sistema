@@ -2109,13 +2109,26 @@
 
   <!-- ==================== MODAL 2: VENTANA PARA VALIDAR EL PAGO CON ÚLTIMOS DÍGITOS DE REFERENCIA ==================== -->
   <div class="modal-backdrop hidden no-print" id="modalValidatePayment" style="z-index: 2150;">
-    <div class="modal-card" style="max-width: 470px; border-top: 6px solid var(--success);">
+    <div class="modal-card" style="max-width: 490px; border-top: 6px solid var(--primary);">
       <div class="modal-header">
         <div>
-          <h3>🔐 Validar Pago Móvil</h3>
+          <h3>🔐 Reportar Pago de Membresía</h3>
           <small style="color:var(--text-muted); font-size:11.5px;">ID de tu APK: <strong id="valModalLicenseId" style="color:var(--primary);">REP-0000</strong></small>
         </div>
         <button class="modal-close" data-close="modalValidatePayment">✕</button>
+      </div>
+
+      <!-- TARJETA CUANDO EL PAGO YA ESTÁ REGISTRADO Y EN ESPERA DEL ADMIN -->
+      <div id="valModalPendingCard" class="hidden" style="background:rgba(2,132,199,0.08); border:1.5px solid #0284c7; border-radius:12px; padding:16px; margin-bottom:14px; text-align:center;">
+        <div style="font-size:36px; margin-bottom:4px;">⏳</div>
+        <strong style="font-size:15px; color:#0369a1; display:block; margin-bottom:4px;">¡Pago Registrado — Esperando Aprobación!</strong>
+        <p style="font-size:13px; color:var(--text); margin-bottom:8px;">
+          Referencia enviada: <span id="valModalPendingRefPill" style="background:#0284c7; color:#fff; font-weight:800; padding:2px 8px; border-radius:6px;">#0000</span>
+        </p>
+        <div style="font-size:12px; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px; text-align:left;">
+          🔔 <strong>Notificación enviada al Administrador:</strong> El administrador ha recibido una alerta sonora y visual en su Panel Maestro para verificar el ingreso bancario. Tu sistema se activará automáticamente apenas confirme el pago.
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" data-close="modalValidatePayment">Cerrar y Continuar Trabajando</button>
       </div>
 
       <form id="formValidatePagoMovil">
@@ -2125,13 +2138,13 @@
             <strong>0105 | 04127049393 | V-26862189</strong>
           </div>
           <div style="display:flex; justify-content:space-between;">
-            <span>Monto ($20 a Tasa Euro BCV):</span>
+            <span>Monto a Pagar ($20 a Tasa Euro BCV):</span>
             <strong id="valModalAmountBs" style="color:var(--primary);">Bs. 0,00</strong>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="paymentRefDigitsInput" style="font-size:14px;">🔢 Últimos dígitos de la Referencia del Pago Móvil *</label>
+          <label for="paymentRefDigitsInput" style="font-size:14px; font-weight:700;">🔢 Últimos dígitos de la Referencia *</label>
           <input
             type="text"
             id="paymentRefDigitsInput"
@@ -2142,28 +2155,52 @@
             required
             style="font-size:20px; font-weight:800; text-align:center; letter-spacing:4px; padding:11px;"
           />
-          <small class="field-hint">Ingresa los últimos 4 a 6 dígitos del comprobante bancario.</small>
+          <small class="field-hint">Ingresa los últimos 4 a 6 dígitos del comprobante del Pago Móvil.</small>
         </div>
 
-        <div class="form-group" style="margin-top:8px;">
-          <label for="paymentUnlockPinInput" style="font-size:12.5px; color:var(--text-muted);">🔑 PIN de Activación del Administrador (Opcional si estás conectado al servidor)</label>
+        <div class="form-group" style="margin-top:10px;">
+          <label for="paymentBankInput" style="font-size:13px;">🏦 Banco de Origen (desde donde realizaste el pago)</label>
+          <select id="paymentBankInput" class="form-control" style="width:100%; padding:9px; border-radius:8px; border:1px solid var(--border); font-size:13px;">
+            <option value="0105 - Banco Mercantil">0105 - Banco Mercantil</option>
+            <option value="0102 - Banco de Venezuela">0102 - Banco de Venezuela</option>
+            <option value="0134 - Banesco">0134 - Banesco</option>
+            <option value="0108 - BBVA Provincial">0108 - BBVA Provincial</option>
+            <option value="0114 - Bancaribe">0114 - Bancaribe</option>
+            <option value="0172 - Bancamiga">0172 - Bancamiga</option>
+            <option value="0191 - BNC Banco Nacional de Crédito">0191 - BNC</option>
+            <option value="Otro Banco">Otro Banco / Pago Móvil</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label for="paymentPayerPhoneInput" style="font-size:13px;">📱 Teléfono emisor del Pago Móvil (opcional)</label>
+          <input
+            type="tel"
+            id="paymentPayerPhoneInput"
+            placeholder="Ej: 04121234567"
+            style="width:100%; padding:9px; border-radius:8px; border:1px solid var(--border); font-size:13px;"
+          />
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label for="paymentUnlockPinInput" style="font-size:12.5px; color:var(--text-muted);">🔑 PIN de Activación Inmediata (Opcional - si el Admin te lo dio por WhatsApp)</label>
           <input
             type="text"
             id="paymentUnlockPinInput"
             inputmode="numeric"
             maxlength="8"
-            placeholder="Si el administrador te dio un PIN por WhatsApp, escríbelo aquí"
+            placeholder="Si estás sin internet y el admin te envió un PIN, colócalo aquí"
             style="font-size:14px; text-align:center; padding:8px;"
           />
         </div>
 
-        <div id="valModalPendingNotice" class="hidden" style="background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:10px; border-radius:8px; font-size:12.5px; margin-bottom:10px;">
-          ⏳ <strong>Referencia enviada al Panel de Administración.</strong> Esperando confirmación del administrador (se activará automáticamente en segundos apenas lo apruebe en el panel, o ingresa arriba el PIN de activación).
+        <div id="valModalPendingNotice" class="hidden" style="background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:10px; border-radius:8px; font-size:12.5px; margin-top:10px; margin-bottom:10px;">
+          ⏳ <strong>Pago reportado.</strong> El Administrador activará tu membresía tras verificar el ingreso bancario en su panel.
         </div>
 
-        <div class="modal-footer" style="justify-content:space-between;">
-          <button type="button" class="btn btn-outline" id="btnBackToMembershipModal">⬅ Volver a Datos</button>
-          <button type="submit" class="btn btn-success btn-lg">✅ Validar Pago</button>
+        <div class="modal-footer" style="justify-content:space-between; margin-top:14px;">
+          <button type="button" class="btn btn-outline" id="btnBackToMembershipModal">⬅ Volver</button>
+          <button type="submit" class="btn btn-success btn-lg" id="btnSubmitReportPayment">📤 Registrar y Notificar al Admin</button>
         </div>
       </form>
     </div>
