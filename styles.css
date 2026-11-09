@@ -1,25 +1,26 @@
 :root {
-  --bg-app: #fdfaf7;
+  --bg-app: #f8fafc;
   --bg-surface: #ffffff;
-  --bg-muted: #f7f1eb;
-  --primary: #c84b6b;
-  --primary-hover: #ad3957;
-  --primary-light: #fceef2;
-  --secondary: #5c3d2e;
-  --text-main: #2d201a;
-  --text-muted: #7a685f;
-  --border: #eadfd5;
-  --success: #1f8b4c;
-  --success-bg: #e7f6ed;
-  --warning: #d97706;
-  --warning-bg: #fef3c7;
-  --danger: #dc2626;
-  --danger-bg: #fee2e2;
+  --bg-muted: #f1f5f9;
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-light: #e0f2fe;
+  --secondary: #0f172a;
+  --secondary-hover: #1e293b;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --shadow-sm: 0 2px 6px rgba(92, 61, 46, 0.05);
-  --shadow-md: 0 8px 24px rgba(92, 61, 46, 0.08);
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 * {

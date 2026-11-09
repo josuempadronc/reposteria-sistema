@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#c84b6b" />
+  <meta name="theme-color" content="#0284c7" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Sistema POS, Pedidos, Inventario y Caja - Repostería</title>
-  <link rel="manifest" href="manifest.json?v=7" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <title>PostFlow | Punto de Venta · Inventario · Cobranza</title>
+  <link rel="manifest" href="manifest.json?v=8" />
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css?v=8" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,10 +23,12 @@
     <!-- SIDEBAR / CAJÓN DESLIZANTE EN MÓVIL -->
     <aside class="sidebar no-print" id="appSidebar">
       <div class="brand-header">
-        <div class="brand-logo" id="brandEmoji">🧁</div>
+        <div class="brand-logo" id="brandEmoji">
+          <img src="icon-postflow.png" alt="PostFlow Logo" style="width:36px; height:36px; border-radius:8px; object-fit:contain; box-shadow:0 2px 8px rgba(0,0,0,0.25);" />
+        </div>
         <div class="brand-info">
-          <h1 id="brandNameDisplay">Dulce Repostería</h1>
-          <span class="brand-subtitle" id="brandSloganDisplay">POS, Inventario y Caja</span>
+          <h1 id="brandNameDisplay">PostFlow</h1>
+          <span class="brand-subtitle" id="brandSloganDisplay">Punto de Venta · Inventario · Cobranza</span>
         </div>
         <button type="button" class="mobile-drawer-close" id="btnCloseMobileSidebar" aria-label="Cerrar menú">✕</button>
       </div>
@@ -110,6 +112,14 @@
           <a href="admin.html" target="_blank" class="btn-switch-user" style="display:block; text-align:center; text-decoration:none; margin-top:6px; font-size:11px; background:rgba(0,0,0,0.28);">
             🛡️ Panel Maestro Admin APKs
           </a>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button type="button" class="btn-switch-user" id="btnOpenPermissionsSidebar" style="flex:1; font-size:10.5px;">
+              🛡️ Permisos
+            </button>
+            <button type="button" class="btn-switch-user" id="btnOpenTermsSidebar" style="flex:1; font-size:10.5px;">
+              📜 Términos
+            </button>
+          </div>
         </div>
         <div class="cash-status-card" id="sidebarCashStatus" style="margin-top:8px;">
           <div class="status-row">
@@ -129,7 +139,7 @@
           ☰
         </button>
         <div class="mobile-brand-center">
-          <strong id="mobileBrandNameDisplay">Dulce Repostería</strong>
+          <strong id="mobileBrandNameDisplay">PostFlow</strong>
           <small id="mobileActiveTabTitle">Punto de Venta</small>
         </div>
         <div class="mobile-header-right">
@@ -170,6 +180,9 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="btn btn-outline btn-sm" id="btnOpenPermissionsTopbar" title="Permisos de Notificaciones, Segundo Plano, Red y Contactos">
+            🛡️ Permisos
+          </button>
           <button class="btn btn-outline btn-sm" id="btnOpenCloudSyncTopbar" title="Copia de Seguridad y Restauración en la Nube">
             ☁️ <span id="topbarCloudSyncText">Nube al día</span>
           </button>
@@ -1180,11 +1193,14 @@
           </div>
         </div>
         <div class="form-row-inline">
-          <div class="form-group">
-            <label>Teléfono / WhatsApp *</label>
-            <input type="text" id="custPhone" required placeholder="Ej. +57 300 123 4567" />
+          <div class="form-group" style="flex:2;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label style="margin-bottom:0;">Teléfono / WhatsApp *</label>
+              <button type="button" class="btn btn-outline btn-sm" id="btnPickCustomerContact" style="font-size:11px; padding:2px 8px;" title="Importar desde agenda telefónica">📇 Agenda Contactos</button>
+            </div>
+            <input type="text" id="custPhone" required placeholder="Ej. +58 412 1234567 / 0412..." />
           </div>
-          <div class="form-group">
+          <div class="form-group" style="flex:2;">
             <label>Dirección de Entrega</label>
             <input type="text" id="custAddress" placeholder="Barrio, Calle, Referencia..." />
           </div>
@@ -1216,6 +1232,7 @@
             <div style="display:flex; gap:6px;">
               <select id="ordCustomerId" required style="flex:1;"></select>
               <button type="button" class="btn btn-outline btn-sm" id="btnNewCustFromOrder" title="Crear cliente rápido">➕</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnPickOrderContact" title="Importar cliente desde agenda">📇 Agenda</button>
             </div>
           </div>
           <div class="form-group" style="flex:1;">
@@ -1689,9 +1706,11 @@
   <div class="login-overlay hidden" id="loginOverlay">
     <div class="login-card">
       <div class="login-brand">
-        <div class="login-logo" id="loginBrandLogo">🧁</div>
-        <h2 id="loginBrandTitle">Dulce Repostería</h2>
-        <p>Selecciona tu usuario e ingresa tu PIN para acceder al turno</p>
+        <div class="login-logo" id="loginBrandLogo">
+          <img src="icon-postflow.png" alt="PostFlow" style="width:48px; height:48px; border-radius:12px; object-fit:contain; box-shadow:0 3px 10px rgba(0,0,0,0.25);" />
+        </div>
+        <h2 id="loginBrandTitle">PostFlow</h2>
+        <p>Punto de Venta · Inventario · Cobranza</p>
       </div>
 
       <div class="login-users-grid" id="loginUsersGrid">
@@ -1720,7 +1739,7 @@
           <button type="button" class="pin-key" data-digit="back">⌫</button>
         </div>
         <small class="field-hint" style="display:block;margin-top:8px;">
-          💡 PIN por defecto: <strong>Admin: 1234</strong> | <strong>Cajera: 1111</strong> | <strong>Repostero: 2222</strong>
+          💡 PIN por defecto: <strong>Admin: 1234</strong> | <strong>Cajero: 1111</strong>
         </small>
       </form>
     </div>
@@ -1738,8 +1757,12 @@
 
       <!-- PASO 1: DATOS DEL NEGOCIO, COLORES Y TASAS -->
       <div id="onbStep1" class="onb-step-body">
+        <div style="text-align:center; margin-bottom:12px;">
+          <img src="portada-postflow.png" alt="PostFlow Portada" style="width:100%; max-height:165px; object-fit:cover; border-radius:10px; box-shadow:0 3px 12px rgba(15,23,42,0.25);" />
+        </div>
+
         <!-- BANNER DE RECUPERACIÓN DE DATOS (PARA CLIENTES QUE CAMBIAN DE TELÉFONO O BORRAN CACHÉ) -->
-        <div class="cloud-restore-banner" style="background: rgba(13, 148, 136, 0.12); border: 1.5px dashed #0d9488; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+        <div class="cloud-restore-banner" style="background: rgba(2, 132, 199, 0.08); border: 1.5px dashed var(--primary); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="font-size:26px;">☁️</span>
             <div style="font-size:13px; color:var(--text-main);">
@@ -1747,31 +1770,31 @@
               <span style="color:var(--text-muted);">Recupera tus productos, ventas, inventario y membresía al instante.</span>
             </div>
           </div>
-          <button type="button" class="btn btn-outline btn-sm" id="btnOpenCloudRestoreFromOnb" style="border-color:#0d9488; color:#0d9488; font-weight:700;">
+          <button type="button" class="btn btn-outline btn-sm" id="btnOpenCloudRestoreFromOnb" style="border-color:var(--primary); color:var(--primary); font-weight:700;">
             📥 Recuperar Mi Negocio
           </button>
         </div>
 
         <div style="text-align:center; margin-bottom:14px;">
-          <h2 style="color:var(--secondary); font-size:21px;">👋 ¡Bienvenido! Paso 1: Configura tu Repostería</h2>
-          <p class="subtitle">Personaliza el nombre, colores y tasas de cambio de tu negocio</p>
+          <h2 style="color:var(--secondary); font-size:21px;">👋 ¡Bienvenido a PostFlow! Paso 1: Configura tu Negocio</h2>
+          <p class="subtitle">Personaliza tu Punto de Venta, inventario y cobranza multimoneda</p>
         </div>
 
         <div class="form-row-inline">
           <div class="form-group" style="flex:2;">
-            <label>🧁 Nombre de tu Repostería o Negocio *</label>
-            <input type="text" id="onbBrandName" placeholder="Ej. Dulce Repostería Artesanal" required />
+            <label>⚡ Nombre de tu Negocio o Empresa *</label>
+            <input type="text" id="onbBrandName" value="PostFlow" placeholder="Ej. Mi Tienda / Empresa Comercial" required />
           </div>
           <div class="form-group" style="flex:1;">
             <label>✨ Emoji o Ícono</label>
-            <input type="text" id="onbBrandEmoji" value="🧁" maxlength="4" />
+            <input type="text" id="onbBrandEmoji" value="⚡" maxlength="4" />
           </div>
         </div>
 
         <div class="form-row-inline">
           <div class="form-group">
             <label>💬 Eslogan o Especialidad</label>
-            <input type="text" id="onbBrandSlogan" placeholder="Ej. Pastelería, Postres y Café" />
+            <input type="text" id="onbBrandSlogan" value="Punto de Venta · Inventario · Cobranza" placeholder="Punto de Venta · Inventario · Cobranza" />
           </div>
           <div class="form-group">
             <label>📱 WhatsApp / Teléfono del Propietario *</label>
@@ -1780,37 +1803,37 @@
         </div>
 
         <div class="form-group">
-          <label>🎨 Elige los Colores de tu Aplicación (Se aplican en vivo):</label>
+          <label>🎨 Elige la Paleta de Colores de tu Aplicación (Se aplican en vivo):</label>
           <div class="palette-presets-grid" style="margin-top:6px;">
-            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#c84b6b" data-s="#5c3d2e" data-b="#fdfaf7">
-              <span class="swatch-pair"><i style="background:#c84b6b"></i><i style="background:#5c3d2e"></i></span>
-              Rosa Pastel
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#0284c7" data-s="#0f172a" data-b="#f8fafc">
+              <span class="swatch-pair"><i style="background:#0284c7"></i><i style="background:#0f172a"></i></span>
+              Azul PostFlow
             </button>
-            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#b45309" data-s="#3e2723" data-b="#fffbeb">
-              <span class="swatch-pair"><i style="background:#b45309"></i><i style="background:#3e2723"></i></span>
-              Chocolate & Miel
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#059669" data-s="#064e3b" data-b="#f0fdf4">
+              <span class="swatch-pair"><i style="background:#059669"></i><i style="background:#064e3b"></i></span>
+              Esmeralda Fintech
             </button>
-            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#0d9488" data-s="#134e4a" data-b="#f0fdfa">
-              <span class="swatch-pair"><i style="background:#0d9488"></i><i style="background:#134e4a"></i></span>
-              Menta Fresca
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#6366f1" data-s="#1e1b4b" data-b="#f8fafc">
+              <span class="swatch-pair"><i style="background:#6366f1"></i><i style="background:#1e1b4b"></i></span>
+              Índigo Tech
             </button>
-            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#7c3aed" data-s="#2e1065" data-b="#faf5ff">
-              <span class="swatch-pair"><i style="background:#7c3aed"></i><i style="background:#2e1065"></i></span>
-              Lavanda Dulce
+            <button type="button" class="palette-preset-btn onb-preset-btn" data-p="#334155" data-s="#020617" data-b="#ffffff">
+              <span class="swatch-pair"><i style="background:#334155"></i><i style="background:#020617"></i></span>
+              Grafito Minimal
             </button>
           </div>
           <div class="form-row-inline" style="margin-top:10px;">
             <div class="form-group">
               <label>Color Botones</label>
-              <input type="color" id="onbColorPrimary" value="#c84b6b" style="height:38px; padding:3px;" />
+              <input type="color" id="onbColorPrimary" value="#0284c7" style="height:38px; padding:3px;" />
             </div>
             <div class="form-group">
               <label>Color Menú / Barra</label>
-              <input type="color" id="onbColorSecondary" value="#5c3d2e" style="height:38px; padding:3px;" />
+              <input type="color" id="onbColorSecondary" value="#0f172a" style="height:38px; padding:3px;" />
             </div>
             <div class="form-group">
               <label>Color Fondo</label>
-              <input type="color" id="onbColorBg" value="#fdfaf7" style="height:38px; padding:3px;" />
+              <input type="color" id="onbColorBg" value="#f8fafc" style="height:38px; padding:3px;" />
             </div>
           </div>
         </div>
@@ -1826,6 +1849,13 @@
           </div>
         </div>
 
+        <div style="margin-top:12px; padding:10px 12px; background:var(--bg-muted); border-radius:8px; border:1px solid var(--border);">
+          <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer;">
+            <input type="checkbox" id="chkAcceptTermsOnboarding" checked />
+            <span>He leído y acepto los <a href="#" id="linkOpenTermsFromOnb" style="color:var(--primary); font-weight:700; text-decoration:underline;">Términos y Condiciones</a> y la Política de Privacidad de PostFlow.</span>
+          </label>
+        </div>
+
         <div class="modal-footer" style="justify-content:flex-end;">
           <button type="button" class="btn btn-primary btn-lg" id="btnOnbNextToStep2">
             Siguiente: Crear mi Primer Producto ➔
@@ -1836,25 +1866,23 @@
       <!-- PASO 2: CREA TU PRIMER PRODUCTO REAL PASO A PASO -->
       <div id="onbStep2" class="onb-step-body hidden">
         <div style="text-align:center; margin-bottom:12px;">
-          <h2 style="color:var(--secondary); font-size:20px;">🍰 Paso 2: ¡Crea tu Primer Producto para la Vitrina!</h2>
-          <p class="subtitle">Vamos a registrar juntos tu primer producto estrella para que veas cómo calcula los precios en Pesos, Dólares y Bolívares automáticamente</p>
+          <h2 style="color:var(--secondary); font-size:20px;">🏷️ Paso 2: ¡Crea tu Primer Producto o Servicio!</h2>
+          <p class="subtitle">Registra tu primer ítem para el catálogo comercial y observa el cálculo automático multimoneda (Pesos, Dólares y Bolívares)</p>
         </div>
 
         <div style="background:var(--bg-muted); border:1.5px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
           <div class="form-row-inline">
             <div class="form-group" style="flex:2;">
-              <label>1️⃣ Nombre de tu Postre o Pastel *</label>
-              <input type="text" id="onbProdName" value="Torta Especial de la Casa" placeholder="Ej. Marquesa de Chocolate, Porción Tres Leches..." />
+              <label>1️⃣ Nombre del Producto o Servicio *</label>
+              <input type="text" id="onbProdName" value="Producto Inicial #1" placeholder="Ej. Servicio Especial, Combo #1, Producto Principal..." />
             </div>
             <div class="form-group" style="flex:1;">
               <label>2️⃣ Categoría</label>
               <select id="onbProdCategory">
-                <option value="Pasteles">🎂 Pasteles</option>
-                <option value="Porciones">🍰 Porciones</option>
-                <option value="Cupcakes">🧁 Cupcakes</option>
-                <option value="Galletas">🍪 Galletas</option>
-                <option value="Postres Fríos">🍮 Postres Fríos</option>
-                <option value="Bebidas">☕ Bebidas</option>
+                <option value="General">📦 General</option>
+                <option value="Servicios">🛠️ Servicios</option>
+                <option value="Productos">🏷️ Productos</option>
+                <option value="Alimentos y Bebidas">🍽️ Alimentos y Bebidas</option>
               </select>
             </div>
           </div>
@@ -2250,6 +2278,136 @@
 
       <div class="modal-footer" style="margin-top:14px;">
         <button type="button" class="btn btn-outline" data-close="modalCloudSync">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: SOLICITUD DE PERMISOS (NOTIFICACIONES, SEGUNDO PLANO, RED Y CONTACTOS) ==================== -->
+  <div class="modal-backdrop hidden no-print" id="modalPermissions" style="z-index: 2250;">
+    <div class="modal-card" style="max-width: 580px; border-top: 5px solid var(--primary);">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="icon-postflow.png" alt="PostFlow" style="width:36px; height:36px; border-radius:8px;" />
+          <div>
+            <h3 style="font-size:17px; margin-bottom:2px;">🛡️ Solicitud de Permisos de PostFlow</h3>
+            <small style="color:var(--text-muted); font-size:12px;">Para garantizar el funcionamiento óptimo de tu punto de venta, cobranzas y WhatsApp</small>
+          </div>
+        </div>
+        <button class="modal-close" data-close="modalPermissions">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px; margin: 12px 0;">
+        <!-- 1. NOTIFICACIONES -->
+        <div class="perm-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--bg-muted); border:1px solid var(--border); border-radius:10px;">
+          <span style="font-size:24px;">🔔</span>
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>Notificaciones y Alertas del Sistema</strong>
+              <span id="permBadgeNotif" class="badge" style="font-size:11px;">Pendiente</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">
+              Avisos instantáneos de stock mínimo, pedidos listos para entrega y confirmación de pagos móviles validados.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnReqPermNotif">Activar</button>
+        </div>
+
+        <!-- 2. SEGUNDO PLANO / PANTALLA ACTIVA -->
+        <div class="perm-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--bg-muted); border:1px solid var(--border); border-radius:10px;">
+          <span style="font-size:24px;">🔋</span>
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>Ejecución en Segundo Plano y Pantalla Activa</strong>
+              <span id="permBadgeWakeLock" class="badge active" style="font-size:11px;">Activo</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">
+              Evita que el teléfono o pantalla se bloquee mientras cobras clientes en caja o se sincroniza WhatsApp con el servidor.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnReqPermWakeLock">Mantener Activo</button>
+        </div>
+
+        <!-- 3. ACCESO A RED / NUBE -->
+        <div class="perm-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--bg-muted); border:1px solid var(--border); border-radius:10px;">
+          <span style="font-size:24px;">📶</span>
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>Acceso a Red y Sincronización en Nube</strong>
+              <span id="permBadgeNetwork" class="badge active" style="font-size:11px; background:#10b981; color:#fff;">En Línea</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">
+              Consulta en tiempo real la tasa Euro BCV oficial, respalda automáticamente en Firebase y valida pagos 24/7.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnTestNetwork">Comprobar</button>
+        </div>
+
+        <!-- 4. AGENDA DE CONTACTOS PARA WHATSAPP -->
+        <div class="perm-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--bg-muted); border:1px solid var(--border); border-radius:10px;">
+          <span style="font-size:24px;">📇</span>
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>Contactos para la función de WhatsApp y Cobranza</strong>
+              <span id="permBadgeContacts" class="badge" style="font-size:11px; background:#0ea5e9; color:#fff;">Disponible</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">
+              Permite seleccionar clientes directamente desde tu libreta de contactos para enviar recibos, notas de entrega y recordatorios de saldo por WhatsApp.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnTestContactPicker">Probar Agenda</button>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between; margin-top:14px;">
+        <button type="button" class="btn btn-outline" data-close="modalPermissions">Continuar</button>
+        <button type="button" class="btn btn-primary btn-lg" id="btnGrantAllPermissions">
+          ✅ Conceder y Activar Permisos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: TÉRMINOS Y CONDICIONES (POSTFLOW) ==================== -->
+  <div class="modal-backdrop hidden no-print" id="modalTerms" style="z-index: 2300;">
+    <div class="modal-card" style="max-width: 640px; border-top: 5px solid var(--primary);">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="icon-postflow.png" alt="PostFlow" style="width:34px; height:34px; border-radius:8px;" />
+          <div>
+            <h3 style="font-size:17px; margin-bottom:2px;">📜 Términos y Condiciones de Uso — PostFlow</h3>
+            <small style="color:var(--text-muted); font-size:11.5px;">Plataforma de Punto de Venta, Inventario y Cobranza · Versión 2.0</small>
+          </div>
+        </div>
+        <button class="modal-close" data-close="modalTerms">✕</button>
+      </div>
+
+      <div style="max-height: 60vh; overflow-y: auto; padding: 10px 4px; font-size: 13px; line-height: 1.6; color: var(--text-main);">
+        <p>Bienvenido a <strong>PostFlow</strong>. Al acceder, instalar o utilizar este software comercial, usted acepta de manera libre, previa y voluntaria los siguientes términos y condiciones de servicio:</p>
+
+        <h4 style="margin: 12px 0 4px 0; color: var(--primary);">1. Naturaleza del Servicio</h4>
+        <p>PostFlow es una solución de software comercial orientada a la gestión de ventas, facturación simplificada, control de stock multimoneda (Pesos, Dólares y Bolívares), registro de clientes, gestión de pedidos y cobranzas automatizadas.</p>
+
+        <h4 style="margin: 12px 0 4px 0; color: var(--primary);">2. Período de Prueba y Licencia Mensual</h4>
+        <p>Cada nueva instalación recibe un período de prueba gratuito de <strong>7 días continuos</strong> con acceso total. Posterior a dicho período, el usuario podrá activar su membresía mensual por un valor de <strong>$20 USD</strong> (o su equivalente en Bolívares a la tasa oficial Euro BCV mediante Pago Móvil o transferencia bancaria validada).</p>
+
+        <h4 style="margin: 12px 0 4px 0; color: var(--primary);">3. Propiedad y Privacidad de los Datos</h4>
+        <p>Toda la información registrada (catálogo de productos, recetas de insumos, historial de ventas, clientes, saldos deudores y arqueos de caja) pertenece única y exclusivamente al titular del negocio. PostFlow almacena estos datos de forma local y los respalda de manera segura en la nube (Firebase Realtime Database) para permitir su restauración inmediata ante cambio, daño o pérdida del dispositivo.</p>
+
+        <h4 style="margin: 12px 0 4px 0; color: var(--primary);">4. Comunicaciones por WhatsApp y Contactos</h4>
+        <p>El sistema incluye herramientas para el envío de notas de entrega, tickets de venta y recordatorios de cobro vía WhatsApp. El acceso a la libreta de contactos del dispositivo se realiza exclusivamente bajo la acción explícita del usuario y con el fin de seleccionar el destinatario del mensaje.</p>
+
+        <h4 style="margin: 12px 0 4px 0; color: var(--primary);">5. Operación Fuera de Línea (Offline) y En Línea</h4>
+        <p>PostFlow opera de manera autónoma incluso sin internet. Las operaciones se registran localmente y se sincronizan automáticamente con la nube cuando el dispositivo recupera conexión a la red.</p>
+
+        <h4 style="margin: 12px 0 4px 0; color: var(--primary);">6. Responsabilidad Fiscal</h4>
+        <p>El usuario es el único responsable del cumplimiento de las normativas tributarias, contables y de facturación que apliquen a su actividad comercial en su respectivo país o jurisdicción.</p>
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between; margin-top:14px;">
+        <span style="font-size:12px; color:var(--text-muted);">PostFlow © 2026 · Todos los derechos reservados</span>
+        <button type="button" class="btn btn-primary" data-close="modalTerms">
+          ✅ He leído y Acepto los Términos
+        </button>
       </div>
     </div>
   </div>

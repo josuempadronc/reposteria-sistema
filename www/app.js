@@ -1,9 +1,7 @@
 // ==========================================
-// SISTEMA POS, PEDIDOS, CLIENTES, INVENTARIO Y CORTE DE CAJA - REPOSTERÍA
-// Precios base en Pesos (COP) con conversión a USD y Bs
+// POSTFLOW — PUNTO DE VENTA, INVENTARIO Y COBRANZA
+// Precios base en Pesos (COP) con conversión automática a USD y Bs
 // ==========================================
-
-const STORAGE_KEY = 'reposteria_pos_data_v2';
 
 // Generador de ilustraciones SVG limpias para productos de muestra
 function makeSampleProductSvg(bg, emoji, label) {
@@ -28,24 +26,27 @@ function getFutureDate(daysAhead) {
   return d.toISOString().split('T')[0];
 }
 
+const STORAGE_KEY = 'postflow_pos_data_v2';
+
 const defaultState = {
   config: {
-    brandName: 'Dulce Repostería',
-    brandSlogan: 'Pastelería Artesanal & Café',
+    brandName: 'PostFlow',
+    brandSlogan: 'Punto de Venta · Inventario · Cobranza',
     brandPhone: '',
-    brandEmoji: '🧁',
-    brandLogo: '',
-    colorPrimary: '#c84b6b',
-    colorSecondary: '#5c3d2e',
-    colorBg: '#fdfaf7',
+    brandEmail: '',
+    brandEmoji: '⚡',
+    brandLogo: 'icon-postflow.png',
+    colorPrimary: '#0284c7', // Azul cian PostFlow
+    colorSecondary: '#0f172a', // Navy profundo PostFlow
+    colorBg: '#f8fafc', // Gris claro moderno
     requireLoginOnStart: false,
-    categories: ['Pasteles', 'Porciones', 'Cupcakes', 'Galletas', 'Postres Fríos', 'Bebidas'],
-    rateUSD: 4200, // 1 USD = 4,200 COP
-    rateBS: 70     // 1 Bs = 70 COP
+    categories: ['General', 'Servicios', 'Productos'],
+    rateUSD: 4000,
+    rateBS: 70
   },
   membership: {
     onboardingCompleted: false,
-    status: 'trial', // 'trial' | 'active' | 'expired'
+    status: 'trial',
     trialStartDate: null,
     expiresAt: null,
     planPriceUSD: 20,
@@ -54,163 +55,21 @@ const defaultState = {
     payments: []
   },
   users: [
-    { id: 'u1', name: 'Administrador General', avatar: '👑', role: 'admin', pin: '1234', active: true },
-    { id: 'u2', name: 'Cajera Turno', avatar: '🧾', role: 'cajero', pin: '1111', active: true },
-    { id: 'u3', name: 'Maestro Repostero', avatar: '👩‍🍳', role: 'repostero', pin: '2222', active: true }
+    { id: 'u1', name: 'Administrador', avatar: '👑', role: 'admin', pin: '1234', active: true },
+    { id: 'u2', name: 'Cajero / Vendedor', avatar: '🧾', role: 'cajero', pin: '1111', active: true }
   ],
   auditLog: [
-    { id: 'aud1', timestamp: new Date().toISOString(), userName: 'Administrador General', role: 'admin', action: 'Inicio del sistema' }
+    { id: 'aud1', timestamp: new Date().toISOString(), userName: 'Administrador', role: 'admin', action: 'Sistema PostFlow inicializado' }
   ],
   baseCash: {
-    COP: 100000,
-    USD: 20,
-    BS: 200
+    COP: 0,
+    USD: 0,
+    BS: 0
   },
-  customers: [
-    {
-      id: 'c1',
-      name: 'María Alejandra Pérez',
-      doc: 'V-18452310',
-      phone: '+58 414 5551234',
-      address: 'Urb. Las Acacias, Calle 4',
-      notes: 'Cliente frecuente, prefiere tortas tres leches y bajas en azúcar.'
-    },
-    {
-      id: 'c2',
-      name: 'Carlos Andrés Gómez',
-      doc: 'CC-1090456789',
-      phone: '+57 311 4448899',
-      address: 'Barrio Caobos, Av. 3',
-      notes: 'Encarga cupcakes para eventos corporativos.'
-    }
-  ],
-  orders: [
-    {
-      id: 'ord1',
-      createdAt: new Date().toISOString(),
-      customerId: 'c1',
-      customerName: 'María Alejandra Pérez',
-      customerPhone: '+58 414 5551234',
-      deliveryDate: getFutureDate(0),
-      deliveryTime: '17:00',
-      description: 'Torta de 1 libra sabor Chocolate rellena de frutos rojos, decoración rosas pastel. Dedicatoria: "Feliz Cumpleaños Mamá".',
-      totalCOP: 85000,
-      paidCOP: 40000,
-      status: 'En Preparación'
-    },
-    {
-      id: 'ord2',
-      createdAt: new Date().toISOString(),
-      customerId: 'c2',
-      customerName: 'Carlos Andrés Gómez',
-      customerPhone: '+57 311 4448899',
-      deliveryDate: getFutureDate(2),
-      deliveryTime: '14:30',
-      description: 'Caja de 12 Cupcakes Red Velvet y Chocolate con logos empresariales.',
-      totalCOP: 90000,
-      paidCOP: 90000,
-      status: 'Pendiente'
-    }
-  ],
-  products: [
-    {
-      id: 'p1',
-      name: 'Torta Tres Leches (Porción)',
-      emoji: '🍰',
-      image: makeSampleProductSvg('#fde2e8', '🍰', 'Tres Leches'),
-      category: 'Porciones',
-      priceCOP: 12000,
-      stock: 18,
-      minStock: 5,
-      expiry: getFutureDate(3)
-    },
-    {
-      id: 'p2',
-      name: 'Torta de Chocolate Matilda',
-      emoji: '🍫',
-      image: makeSampleProductSvg('#ebd5c8', '🍫', 'Chocolate Matilda'),
-      category: 'Pasteles',
-      priceCOP: 65000,
-      stock: 4,
-      minStock: 2,
-      expiry: getFutureDate(4)
-    },
-    {
-      id: 'p3',
-      name: 'Cupcake Red Velvet',
-      emoji: '🧁',
-      image: makeSampleProductSvg('#fce7f3', '🧁', 'Red Velvet'),
-      category: 'Cupcakes',
-      priceCOP: 7500,
-      stock: 24,
-      minStock: 6,
-      expiry: getFutureDate(2)
-    },
-    {
-      id: 'p4',
-      name: 'Cheesecake de Frutos Rojos',
-      emoji: '🍓',
-      image: makeSampleProductSvg('#ffe4e6', '🍓', 'Cheesecake'),
-      category: 'Postres Fríos',
-      priceCOP: 14000,
-      stock: 10,
-      minStock: 4,
-      expiry: getFutureDate(2)
-    },
-    {
-      id: 'p5',
-      name: 'Galleta New York ChocoChips',
-      emoji: '🍪',
-      image: makeSampleProductSvg('#fef3c7', '🍪', 'Galleta NY'),
-      category: 'Galletas',
-      priceCOP: 6000,
-      stock: 30,
-      minStock: 8,
-      expiry: getFutureDate(7)
-    },
-    {
-      id: 'p6',
-      name: 'Quesillo / Flan Napolitano',
-      emoji: '🍮',
-      image: makeSampleProductSvg('#ffedd5', '🍮', 'Quesillo Casero'),
-      category: 'Postres Fríos',
-      priceCOP: 9500,
-      stock: 3,
-      minStock: 5,
-      expiry: getFutureDate(1)
-    },
-    {
-      id: 'p7',
-      name: 'Café Cappuccino Grande',
-      emoji: '☕',
-      image: makeSampleProductSvg('#e5d5c5', '☕', 'Cappuccino'),
-      category: 'Bebidas',
-      priceCOP: 7000,
-      stock: 50,
-      minStock: 10,
-      expiry: ''
-    },
-    {
-      id: 'p8',
-      name: 'Milhojas de Arequipe',
-      emoji: '🥐',
-      image: makeSampleProductSvg('#fef08a', '🥐', 'Milhojas'),
-      category: 'Porciones',
-      priceCOP: 10500,
-      stock: 12,
-      minStock: 4,
-      expiry: getFutureDate(1)
-    }
-  ],
-  ingredients: [
-    { id: 'i1', name: 'Harina de Trigo Todo Uso', unit: 'kg', stock: 25, minStock: 10, costCOP: 4200, expiry: getFutureDate(60) },
-    { id: 'i2', name: 'Azúcar Blanca Refinada', unit: 'kg', stock: 18, minStock: 8, costCOP: 4800, expiry: getFutureDate(90) },
-    { id: 'i3', name: 'Mantequilla sin Sal', unit: 'kg', stock: 4, minStock: 5, costCOP: 28000, expiry: getFutureDate(15) },
-    { id: 'i4', name: 'Huevos Frescos AA', unit: 'unid', stock: 90, minStock: 30, costCOP: 600, expiry: getFutureDate(12) },
-    { id: 'i5', name: 'Crema de Leche Repostera', unit: 'L', stock: 3, minStock: 4, costCOP: 19500, expiry: getFutureDate(2) },
-    { id: 'i6', name: 'Chocolate Cobertura 70%', unit: 'kg', stock: 6, minStock: 3, costCOP: 38000, expiry: getFutureDate(120) },
-    { id: 'i7', name: 'Cajas para Tortas y Empaques', unit: 'unid', stock: 40, minStock: 15, costCOP: 2200, expiry: '' }
-  ],
+  customers: [],
+  orders: [],
+  products: [],
+  ingredients: [],
   sales: [],
   expenses: [],
   mermas: [],
@@ -226,9 +85,31 @@ let currentUser = state.users && state.users.length > 0 ? state.users[0] : { id:
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('reposteria_pos_data_v1');
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('postflow_pos_data_v1') || localStorage.getItem('reposteria_pos_data_v2') || localStorage.getItem('reposteria_pos_data_v1');
     if (!raw) return structuredClone(defaultState);
     const parsed = JSON.parse(raw);
+
+    // Limpieza automática de datos ficticios o nombres antiguos
+    if (parsed.config) {
+      if (parsed.config.brandName === 'Dulce Repostería' || !parsed.config.brandName) {
+        parsed.config.brandName = 'PostFlow';
+        parsed.config.brandSlogan = 'Punto de Venta · Inventario · Cobranza';
+        parsed.config.brandEmoji = '⚡';
+        parsed.config.colorPrimary = '#0284c7';
+        parsed.config.colorSecondary = '#0f172a';
+        parsed.config.colorBg = '#f8fafc';
+      }
+    }
+    if (parsed.products && parsed.products.some(p => p.id === 'p1' && p.name && (p.name.includes('Tres Leches') || p.name.includes('Matilda')))) {
+      parsed.products = [];
+      parsed.ingredients = [];
+      parsed.customers = [];
+      parsed.orders = [];
+      parsed.sales = [];
+      parsed.expenses = [];
+      parsed.mermas = [];
+    }
+
     return {
       ...structuredClone(defaultState),
       ...parsed,
@@ -237,8 +118,14 @@ function loadState() {
       baseCash: { ...defaultState.baseCash, ...(parsed.baseCash || {}) },
       users: parsed.users && parsed.users.length ? parsed.users : structuredClone(defaultState.users),
       auditLog: parsed.auditLog || structuredClone(defaultState.auditLog),
-      customers: parsed.customers || structuredClone(defaultState.customers),
-      orders: parsed.orders || structuredClone(defaultState.orders)
+      customers: parsed.customers || [],
+      orders: parsed.orders || [],
+      products: parsed.products || [],
+      ingredients: parsed.ingredients || [],
+      sales: parsed.sales || [],
+      expenses: parsed.expenses || [],
+      mermas: parsed.mermas || [],
+      closedDays: parsed.closedDays || []
     };
   } catch (e) {
     console.error('Error cargando estado:', e);
@@ -320,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initConfigEvents();
   initOnboardingAndMembershipEvents();
   initCloudSyncEvents();
+  initPermissionsAndTermsEvents();
 
   renderAll();
   if (!state.membership.onboardingCompleted) {
@@ -498,9 +386,9 @@ function closeModal(id) {
 // ==========================================
 function applyThemeColors(primary, secondary, bg) {
   const root = document.documentElement;
-  const p = primary || '#c84b6b';
-  const s = secondary || '#5c3d2e';
-  const b = bg || '#fdfaf7';
+  const p = primary || '#0284c7';
+  const s = secondary || '#0f172a';
+  const b = bg || '#f8fafc';
 
   root.style.setProperty('--primary', p);
   root.style.setProperty('--primary-hover', p);
@@ -520,18 +408,13 @@ function renderBrandAndRates() {
   const brandLogoContainer = document.getElementById('brandEmoji');
   const printLogoImg = document.getElementById('printBrandLogo');
 
-  if (brandLogo) {
-    brandLogoContainer.innerHTML = `<img src="${brandLogo}" alt="${brandName}" />`;
-    if (printLogoImg) {
-      printLogoImg.src = brandLogo;
-      printLogoImg.style.display = 'block';
-    }
-  } else {
-    brandLogoContainer.textContent = brandEmoji || '🧁';
-    if (printLogoImg) {
-      printLogoImg.src = '';
-      printLogoImg.style.display = 'none';
-    }
+  const logoSrc = brandLogo || 'icon-postflow.png';
+  if (brandLogoContainer) {
+    brandLogoContainer.innerHTML = `<img src="${logoSrc}" alt="${brandName}" style="width:36px; height:36px; border-radius:8px; object-fit:contain;" />`;
+  }
+  if (printLogoImg) {
+    printLogoImg.src = logoSrc;
+    printLogoImg.style.display = 'block';
   }
 
   applyThemeColors(colorPrimary, colorSecondary, colorBg);
@@ -3812,14 +3695,14 @@ function openOnboardingWizard(stepNumber = 1) {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
 
-  document.getElementById('onbBrandName').value = state.config.brandName || 'Dulce Repostería';
-  document.getElementById('onbBrandEmoji').value = state.config.brandEmoji || '🧁';
-  document.getElementById('onbBrandSlogan').value = state.config.brandSlogan || 'Pastelería Artesanal & Café';
+  document.getElementById('onbBrandName').value = state.config.brandName || 'PostFlow';
+  document.getElementById('onbBrandEmoji').value = state.config.brandEmoji || '⚡';
+  document.getElementById('onbBrandSlogan').value = state.config.brandSlogan || 'Punto de Venta · Inventario · Cobranza';
   document.getElementById('onbBrandPhone').value = state.config.brandPhone || '';
-  document.getElementById('onbColorPrimary').value = state.config.colorPrimary || '#c84b6b';
-  document.getElementById('onbColorSecondary').value = state.config.colorSecondary || '#5c3d2e';
-  document.getElementById('onbColorBg').value = state.config.colorBg || '#fdfaf7';
-  document.getElementById('onbRateUSD').value = state.config.rateUSD || 4200;
+  document.getElementById('onbColorPrimary').value = state.config.colorPrimary || '#0284c7';
+  document.getElementById('onbColorSecondary').value = state.config.colorSecondary || '#0f172a';
+  document.getElementById('onbColorBg').value = state.config.colorBg || '#f8fafc';
+  document.getElementById('onbRateUSD').value = state.config.rateUSD || 4000;
   document.getElementById('onbRateBS').value = state.config.rateBS || 70;
 
   updateOnbFirstProductPreview();
@@ -3832,7 +3715,7 @@ function updateOnbFirstProductPreview() {
   const prevEl = document.getElementById('onbProdConversionPreview');
   if (!priceEl || !prevEl) return;
   const cop = parseFloat(priceEl.value) || 0;
-  prevEl.innerHTML = `✨ <strong>Conversión automática en vitrina:</strong> Al cobrar este producto en caja, el sistema mostrará: <strong>${fmtCOP(cop)} COP</strong> | <strong>${fmtUSD(copToUSD(cop))} USD</strong> | <strong>${fmtBS(copToBS(cop))}</strong>`;
+  prevEl.innerHTML = `✨ <strong>Conversión automática en catálogo:</strong> Al cobrar este producto en caja, el sistema mostrará: <strong>${fmtCOP(cop)} COP</strong> | <strong>${fmtUSD(copToUSD(cop))} USD</strong> | <strong>${fmtBS(copToBS(cop))}</strong>`;
 }
 
 function setOnboardingStep(stepNumber) {
@@ -3845,14 +3728,14 @@ function setOnboardingStep(stepNumber) {
 }
 
 function saveOnboardingStep1Data() {
-  const name = document.getElementById('onbBrandName').value.trim() || 'Dulce Repostería';
-  const emoji = document.getElementById('onbBrandEmoji').value.trim() || '🧁';
-  const slogan = document.getElementById('onbBrandSlogan').value.trim() || 'Pastelería, Postres y Café';
+  const name = document.getElementById('onbBrandName').value.trim() || 'PostFlow';
+  const emoji = document.getElementById('onbBrandEmoji').value.trim() || '⚡';
+  const slogan = document.getElementById('onbBrandSlogan').value.trim() || 'Punto de Venta · Inventario · Cobranza';
   const phone = document.getElementById('onbBrandPhone').value.trim();
-  const cPrim = document.getElementById('onbColorPrimary').value || '#c84b6b';
-  const cSec = document.getElementById('onbColorSecondary').value || '#5c3d2e';
-  const cBg = document.getElementById('onbColorBg').value || '#fdfaf7';
-  const rUSD = parseFloat(document.getElementById('onbRateUSD').value) || 4200;
+  const cPrim = document.getElementById('onbColorPrimary').value || '#0284c7';
+  const cSec = document.getElementById('onbColorSecondary').value || '#0f172a';
+  const cBg = document.getElementById('onbColorBg').value || '#f8fafc';
+  const rUSD = parseFloat(document.getElementById('onbRateUSD').value) || 4000;
   const rBS = parseFloat(document.getElementById('onbRateBS').value) || 70;
 
   state.config.brandName = name;
@@ -3873,16 +3756,16 @@ function saveOnboardingStep1Data() {
 const INTERACTIVE_TOUR_STEPS = [
   {
     tab: 'inventario',
-    title: '🍰 1/7: Módulo de Productos Terminados (Tu Vitrina)',
-    desc: 'Aquí ves todos tus postres (incluyendo el que acabas de crear). Usa "➕ Nuevo Producto" para subir fotos reales de tus tortas o el botón "+ Stock" cada vez que salga una tanda recién horneada.',
+    title: '📦 1/7: Catálogo de Productos y Servicios',
+    desc: 'Aquí administras tu inventario comercial. Usa "➕ Nuevo Producto" para cargar fotos, precios y stock mínimo de tus artículos.',
     actionLabel: '➕ Crear Otro Producto',
     spotlightSelector: '#btnNewProduct',
     onAction: () => document.getElementById('btnNewProduct')?.click()
   },
   {
     tab: 'insumos',
-    title: '🌾 2/7: Módulo de Materia Prima e Insumos',
-    desc: 'Aquí registras harina, azúcar, mantequilla, huevos y cajas por kilos, litros o unidades. Cuando horneas, tocas "- Usar" en la tabla para descontar lo gastado y recibir alertas antes de quedarte sin insumos.',
+    title: '🌾 2/7: Materia Prima e Insumos',
+    desc: 'Registra insumos y materiales por kilos, litros o unidades para descontarlos automáticamente al producir o vender.',
     actionLabel: '➕ Registrar un Insumo',
     spotlightSelector: '#btnNewIngredient',
     onAction: () => document.getElementById('btnNewIngredient')?.click()
@@ -3890,8 +3773,8 @@ const INTERACTIVE_TOUR_STEPS = [
   {
     tab: 'pos',
     title: '🛒 3/7: Punto de Venta (Caja Multi-Moneda)',
-    desc: '¡Haz una venta de prueba! Toca cualquier postre del catálogo para agregarlo a la cuenta. Luego elige Efectivo (COP, USD o Bs), Transferencia o Pago Mixto, selecciona de qué gaveta entregas el vuelto y pulsa Cobrar.',
-    actionLabel: '🍰 Agregar 1er Producto al Carrito',
+    desc: '¡Haz una venta de prueba! Toca cualquier producto para sumarlo a la orden. Elige Efectivo (COP, USD o Bs), Transferencia o Pago Mixto y pulsa Cobrar.',
+    actionLabel: '🛒 Ver Carrito de Cobro',
     spotlightSelector: '#posProductsGrid',
     onAction: () => {
       if (state.products.length > 0) addToCart(state.products[0].id);
@@ -3899,8 +3782,8 @@ const INTERACTIVE_TOUR_STEPS = [
   },
   {
     tab: 'pedidos',
-    title: '🎂 4/7: Pedidos Personalizados y WhatsApp Automático',
-    desc: 'Agenda encargos de tortas con fecha de entrega y abono inicial. Si vinculas tu QR en "WhatsApp Auto", apenas cambies el estado del pedido a "🎁 Listo para Entregar", el sistema le enviará un WhatsApp automático al cliente.',
+    title: '🎂 4/7: Pedidos y WhatsApp Automático',
+    desc: 'Agenda encargos con fecha de entrega y abono inicial. Con "WhatsApp Auto", cuando marques un pedido como "Listo", se enviará la notificación de cobranza automáticamente.',
     actionLabel: '➕ Probar Nuevo Pedido',
     spotlightSelector: '#btnNewOrder',
     onAction: () => document.getElementById('btnNewOrder')?.click()
@@ -3908,15 +3791,15 @@ const INTERACTIVE_TOUR_STEPS = [
   {
     tab: 'mermas',
     title: '⚠️ 5/7: Control de Caducidad y Mermas',
-    desc: 'Aquí el sistema te muestra qué productos o lotes están próximos a vencer y te permite dar de baja mermas (por vencimiento o daño) para descontarlas del stock automáticamente.',
-    actionLabel: '📉 Registrar Baja / Merma',
+    desc: 'Controla artículos próximos a vencer o pérdidas por merma para ajustar el inventario y mantener tus costos exactos.',
+    actionLabel: '📉 Registrar Merma',
     spotlightSelector: '#btnRegisterMerma',
     onAction: () => document.getElementById('btnRegisterMerma')?.click()
   },
   {
     tab: 'corte',
-    title: '📊 6/7: Entrega de Cuentas (Corte de Caja y Arqueo)',
-    desc: 'Al cerrar el día, el sistema calcula cuánto dinero esperado debe haber en Pesos, Dólares y Bolívares. Tú escribes el dinero físico contado en las 3 monedas y te indica si la caja está Cuadrada, si Falta o si Sobra.',
+    title: '📊 6/7: Entrega de Cuentas (Corte y Arqueo)',
+    desc: 'Al cerrar el turno, el sistema compara el dinero esperado en Pesos, Dólares y Bolívares con tu conteo físico e indica si la caja está cuadrada.',
     actionLabel: '💵 Ir al Arqueo Físico',
     spotlightSelector: '#countedCashCOP',
     onAction: () => {
@@ -3929,8 +3812,8 @@ const INTERACTIVE_TOUR_STEPS = [
   },
   {
     tab: 'usuarios',
-    title: '🔐 7/7: Control de Usuarios y Roles por PIN',
-    desc: 'Crea accesos para Administrador (PIN 1234), Cajera (PIN 1111) y Repostero (PIN 2222) y revisa la bitácora de auditoría. ¡Ya conoces todos los módulos y tus 7 días de prueba gratis están corriendo!',
+    title: '🔐 7/7: Usuarios, Roles y Seguridad',
+    desc: 'Crea accesos para Administrador (PIN 1234) o Cajero (PIN 1111) y revisa la bitácora de auditoría. ¡Tus 7 días de prueba gratis en PostFlow están activos!',
     actionLabel: '➕ Crear Usuario',
     spotlightSelector: '#btnNewUser',
     onAction: () => document.getElementById('btnNewUser')?.click()
@@ -4938,4 +4821,264 @@ function initCloudSyncEvents() {
   setTimeout(() => {
     scheduleCloudBackup(false);
   }, 3000);
+}
+
+// ==========================================
+// SOLICITUD DE PERMISOS, NOTIFICACIONES, SEGUNDO PLANO Y CONTACTOS (WHATSAPP)
+// ==========================================
+let screenWakeLock = null;
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    showToast('⚠️ Las notificaciones no están soportadas en este navegador');
+    return false;
+  }
+  try {
+    const perm = await Notification.requestPermission();
+    updatePermissionsBadges();
+    if (perm === 'granted') {
+      showToast('🔔 Notificaciones de PostFlow activadas');
+      sendNativeNotification('PostFlow POS', '¡Notificaciones y alertas activadas con éxito!');
+      return true;
+    } else {
+      showToast('⚠️ Notificaciones bloqueadas en el navegador');
+      return false;
+    }
+  } catch (err) {
+    console.warn(err);
+    return false;
+  }
+}
+
+function sendNativeNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body,
+        icon: 'icon-192.png',
+        badge: 'favicon.png'
+      });
+    } catch (_) {}
+  }
+}
+
+async function requestScreenWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      screenWakeLock = await navigator.wakeLock.request('screen');
+      screenWakeLock.addEventListener('release', () => {
+        screenWakeLock = null;
+        updatePermissionsBadges();
+      });
+      updatePermissionsBadges();
+      showToast('🔋 Pantalla activa durante el turno de caja');
+      return true;
+    } catch (err) {
+      console.warn('WakeLock error:', err);
+      return false;
+    }
+  } else {
+    showToast('ℹ️ Modo pantalla activa gestionado por el sistema');
+    return false;
+  }
+}
+
+async function pickDeviceContact(targetDoc = 'customer') {
+  if ('contacts' in navigator && 'ContactsManager' in window) {
+    try {
+      const props = ['name', 'tel'];
+      const contacts = await navigator.contacts.select(props, { multiple: false });
+      if (contacts && contacts.length > 0) {
+        const contact = contacts[0];
+        const name = (contact.name && contact.name[0]) || '';
+        const rawTel = (contact.tel && contact.tel[0]) || '';
+        const phone = rawTel.replace(/[^0-9+]/g, '');
+
+        if (targetDoc === 'customer') {
+          const nameEl = document.getElementById('custName');
+          const phoneEl = document.getElementById('custPhone');
+          if (name && nameEl) nameEl.value = name;
+          if (phone && phoneEl) phoneEl.value = phone;
+          showToast(`📇 Contacto seleccionado: ${name || phone}`);
+        } else if (targetDoc === 'order') {
+          let cust = state.customers.find((c) => cleanPhoneDigits(c.phone) === cleanPhoneDigits(phone));
+          if (!cust) {
+            cust = {
+              id: 'c_' + Date.now(),
+              name: name || `Cliente ${phone}`,
+              phone: phone,
+              doc: '',
+              address: '',
+              notes: 'Importado de agenda telefónica'
+            };
+            state.customers.push(cust);
+            saveState();
+            renderCustomersList();
+            populateCustomerSelects();
+          }
+          const sel = document.getElementById('ordCustomerId');
+          if (sel) sel.value = cust.id;
+          showToast(`📇 Cliente asignado: ${cust.name}`);
+        }
+        return;
+      }
+    } catch (err) {
+      console.log('Contacts picker cancelado o error:', err);
+    }
+  }
+
+  // Fallback si la API de contactos no está disponible (ej. en desktop)
+  const manual = prompt('Ingresa el número de WhatsApp o Nombre del contacto:');
+  if (manual) {
+    if (targetDoc === 'customer') {
+      const phoneEl = document.getElementById('custPhone');
+      if (phoneEl) phoneEl.value = manual.trim();
+    } else if (targetDoc === 'order') {
+      let cust = state.customers.find((c) => c.phone.includes(manual) || c.name.toLowerCase().includes(manual.toLowerCase()));
+      if (cust) {
+        const sel = document.getElementById('ordCustomerId');
+        if (sel) sel.value = cust.id;
+      } else {
+        const newCust = {
+          id: 'c_' + Date.now(),
+          name: manual.trim(),
+          phone: manual.replace(/[^0-9+]/g, ''),
+          doc: '',
+          address: '',
+          notes: ''
+        };
+        state.customers.push(newCust);
+        saveState();
+        renderCustomersList();
+        populateCustomerSelects();
+        const sel = document.getElementById('ordCustomerId');
+        if (sel) sel.value = newCust.id;
+      }
+    }
+    showToast(`📇 Contacto guardado: ${manual}`);
+  }
+}
+
+function updatePermissionsBadges() {
+  const bNotif = document.getElementById('permBadgeNotif');
+  if (bNotif) {
+    if (!('Notification' in window)) {
+      bNotif.textContent = 'No soportado';
+      bNotif.className = 'badge';
+    } else if (Notification.permission === 'granted') {
+      bNotif.textContent = 'Activo';
+      bNotif.className = 'badge active';
+      bNotif.style.background = '#10b981';
+      bNotif.style.color = '#fff';
+    } else if (Notification.permission === 'denied') {
+      bNotif.textContent = 'Bloqueado';
+      bNotif.className = 'badge expired';
+    } else {
+      bNotif.textContent = 'Pendiente';
+      bNotif.className = 'badge';
+    }
+  }
+
+  const bWake = document.getElementById('permBadgeWakeLock');
+  if (bWake) {
+    if (screenWakeLock) {
+      bWake.textContent = 'Activo';
+      bWake.className = 'badge active';
+      bWake.style.background = '#10b981';
+      bWake.style.color = '#fff';
+    } else {
+      bWake.textContent = 'Inactivo';
+      bWake.className = 'badge';
+      bWake.style.background = '';
+      bWake.style.color = '';
+    }
+  }
+
+  const bNet = document.getElementById('permBadgeNetwork');
+  if (bNet) {
+    if (navigator.onLine) {
+      bNet.textContent = 'En Línea';
+      bNet.className = 'badge active';
+      bNet.style.background = '#10b981';
+      bNet.style.color = '#fff';
+    } else {
+      bNet.textContent = 'Offline (Local)';
+      bNet.className = 'badge expired';
+    }
+  }
+
+  const bCont = document.getElementById('permBadgeContacts');
+  if (bCont) {
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+      bCont.textContent = 'Nativo (Android)';
+      bCont.className = 'badge active';
+      bCont.style.background = '#0ea5e9';
+      bCont.style.color = '#fff';
+    } else {
+      bCont.textContent = 'Modo Web / Rápido';
+      bCont.className = 'badge';
+    }
+  }
+}
+
+function initPermissionsAndTermsEvents() {
+  updatePermissionsBadges();
+
+  // Abrir Modal de Permisos
+  ['btnOpenPermissionsTopbar', 'btnOpenPermissionsSidebar'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      closeMobileSidebar();
+      updatePermissionsBadges();
+      openModal('modalPermissions');
+    });
+  });
+
+  // Abrir Modal de Términos y Condiciones
+  ['btnOpenTermsSidebar', 'linkOpenTermsFromOnb'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMobileSidebar();
+      openModal('modalTerms');
+    });
+  });
+
+  // Botones individuales de permisos
+  document.getElementById('btnReqPermNotif')?.addEventListener('click', requestNotificationPermission);
+  document.getElementById('btnReqPermWakeLock')?.addEventListener('click', requestScreenWakeLock);
+  document.getElementById('btnTestNetwork')?.addEventListener('click', () => {
+    updatePermissionsBadges();
+    showToast(navigator.onLine ? '📶 Conexión activa a internet y Firebase' : '⚠️ Sin conexión - Operando en almacenamiento local');
+  });
+  document.getElementById('btnTestContactPicker')?.addEventListener('click', () => pickDeviceContact('customer'));
+
+  // Conceder todos los permisos
+  document.getElementById('btnGrantAllPermissions')?.addEventListener('click', async () => {
+    await requestNotificationPermission();
+    await requestScreenWakeLock();
+    updatePermissionsBadges();
+    closeModal('modalPermissions');
+    showToast('✅ Permisos configurados con éxito en PostFlow');
+  });
+
+  // Botones de Selector de Contactos en Modales
+  document.getElementById('btnPickCustomerContact')?.addEventListener('click', () => pickDeviceContact('customer'));
+  document.getElementById('btnPickOrderContact')?.addEventListener('click', () => pickDeviceContact('order'));
+
+  // Escuchadores de Red
+  window.addEventListener('online', () => {
+    updatePermissionsBadges();
+    showToast('📶 Conexión restablecida. Sincronizando con la nube...');
+    scheduleCloudBackup(true);
+  });
+  window.addEventListener('offline', () => {
+    updatePermissionsBadges();
+    showToast('⚠️ Modo fuera de línea activado. Tus ventas se guardan localmente.');
+  });
+
+  // Solicitar WakeLock automáticamente en segundo plano cuando la app está abierta
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      requestScreenWakeLock();
+    }
+  });
 }
