@@ -218,7 +218,41 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- PANTALLA DE ACCESO RESTRINGIDO PARA EL ADMINISTRADOR / DUEÑO -->
+  <div id="adminLockOverlay" style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:#0b1120;">
+    <div style="max-width:400px; width:100%; background:#1e293b; border:1px solid #334155; border-radius:16px; padding:28px 24px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+      <div style="width:56px; height:56px; background:#0284c7; border-radius:14px; margin:0 auto 16px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(2,132,199,0.4);">
+        <img src="icon-postflow.png" alt="PostFlow" style="width:38px; height:38px; border-radius:8px;" />
+      </div>
+      <h2 style="font-size:19px; font-weight:800; margin-bottom:6px; color:#f8fafc;">PostFlow · Panel Maestro</h2>
+      <p style="font-size:12.5px; color:#94a3b8; margin-bottom:18px;">
+        Acceso exclusivo del propietario para monitoreo de licencias y validación de pagos.
+      </p>
+
+      <form id="formAdminMasterAuth">
+        <div style="margin-bottom:16px;">
+          <input
+            type="password"
+            id="adminMasterKeyInput"
+            required
+            placeholder="Ingresa Clave Maestra..."
+            style="width:100%; padding:12px; font-size:16px; font-weight:700; text-align:center; background:#0f172a; border:1.5px solid #334155; border-radius:10px; color:#fff;"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:14px; font-weight:700;">
+          🔓 Desbloquear Panel Maestro
+        </button>
+        <div id="adminAuthError" style="margin-top:10px; font-size:12px; color:#ef4444; display:none;">
+          ❌ Clave incorrecta. Acceso no autorizado.
+        </div>
+      </form>
+      <div style="margin-top:16px; border-top:1px solid #334155; padding-top:12px;">
+        <a href="index.html" style="color:#64748b; font-size:12px; text-decoration:none;">⬅ Volver a la App Principal</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="adminMainContainer" style="display:none;">
     <header class="topbar">
       <div class="brand">
         <div class="brand-icon">
@@ -231,6 +265,7 @@
       </div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <button class="btn btn-outline" id="btnRefreshAdmin">🔄 Actualizar Lista</button>
+        <button class="btn btn-danger btn-sm" id="btnAdminLogout" style="padding:8px 12px;">🔒 Salir</button>
         <a href="index.html" class="btn btn-primary">⚡ Ir a PostFlow App ➔</a>
       </div>
     </header>
@@ -656,10 +691,51 @@
       }
     }
 
+    const ADMIN_MASTER_PIN = '26862189'; // Clave maestra del propietario
+
+    function checkAdminAuth() {
+      const isAuth = sessionStorage.getItem('postflow_admin_auth') === 'granted';
+      const overlay = document.getElementById('adminLockOverlay');
+      const main = document.getElementById('adminMainContainer');
+
+      if (isAuth) {
+        if (overlay) overlay.style.display = 'none';
+        if (main) main.style.display = 'block';
+        loadAdminData();
+      } else {
+        if (overlay) overlay.style.display = 'flex';
+        if (main) main.style.display = 'none';
+        setTimeout(() => document.getElementById('adminMasterKeyInput')?.focus(), 150);
+      }
+    }
+
+    document.getElementById('formAdminMasterAuth')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = document.getElementById('adminMasterKeyInput').value.trim();
+      const err = document.getElementById('adminAuthError');
+      if (val === ADMIN_MASTER_PIN || val === 'admin2026') {
+        sessionStorage.setItem('postflow_admin_auth', 'granted');
+        if (err) err.style.display = 'none';
+        checkAdminAuth();
+      } else {
+        if (err) err.style.display = 'block';
+        document.getElementById('adminMasterKeyInput').select();
+      }
+    });
+
+    document.getElementById('btnAdminLogout')?.addEventListener('click', () => {
+      sessionStorage.removeItem('postflow_admin_auth');
+      checkAdminAuth();
+    });
+
     document.getElementById('btnRefreshAdmin').addEventListener('click', loadAdminData);
 
-    loadAdminData();
-    setInterval(loadAdminData, 4000);
+    checkAdminAuth();
+    setInterval(() => {
+      if (sessionStorage.getItem('postflow_admin_auth') === 'granted') {
+        loadAdminData();
+      }
+    }, 4000);
   </script>
 </body>
 </html>
