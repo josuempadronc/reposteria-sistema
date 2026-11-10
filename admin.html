@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PostFlow — Panel Maestro de Administración de APKs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PostFlow — Panel Maestro de Administración</title>
   <link rel="icon" href="favicon.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,25 +16,30 @@
       --border: #334155;
       --text: #f8fafc;
       --muted: #94a3b8;
-      --primary: #e11d48;
-      --primary-hover: #be123c;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent-rose: #e11d48;
       --success: #10b981;
+      --success-hover: #059669;
       --warning: #f59e0b;
       --danger: #ef4444;
       --info: #3b82f6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 20px;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
     }
     .container {
-      max-width: 1260px;
+      max-width: 1300px;
       margin: 0 auto;
     }
+
+    /* TOPBAR */
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -42,10 +47,10 @@
       flex-wrap: wrap;
       gap: 14px;
       background: var(--surface);
-      padding: 18px 22px;
+      padding: 16px 20px;
       border-radius: 16px;
       border: 1px solid var(--border);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .brand {
       display: flex;
@@ -53,71 +58,89 @@
       gap: 12px;
     }
     .brand-icon {
-      width: 46px;
-      height: 46px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      background: var(--primary);
+      background: linear-gradient(135deg, #0284c7, #0369a1);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
     }
-    .brand h1 { font-size: 19px; font-weight: 800; }
-    .brand p { font-size: 12.5px; color: var(--muted); }
+    .brand h1 { font-size: 18px; font-weight: 800; line-height: 1.2; }
+    .brand p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* BUTTONS */
     .btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      padding: 9px 14px;
-      border-radius: 9px;
+      padding: 8px 13px;
+      border-radius: 8px;
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
       border: 1px solid transparent;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
+      white-space: nowrap;
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: var(--success-hover); }
     .btn-warning { background: var(--warning); color: #0f172a; }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
     .btn-outline:hover { background: var(--surface-hover); }
-    .btn-sm { padding: 6px 10px; font-size: 12px; }
+    .btn-sm { padding: 6px 10px; font-size: 11.5px; }
 
+    /* KPIS */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
     }
     .kpi-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 16px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
     }
-    .kpi-card span { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
-    .kpi-card strong { display: block; font-size: 28px; font-weight: 800; margin-top: 6px; }
-    .kpi-card small { font-size: 12px; color: var(--muted); }
+    .kpi-card span { font-size: 11.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-card strong { display: block; font-size: 26px; font-weight: 800; margin: 4px 0 2px 0; }
+    .kpi-card small { font-size: 11.5px; color: var(--muted); }
 
+    /* LAYOUT GRIDS */
     .grid-2 {
       display: grid;
       grid-template-columns: 1.4fr 1fr;
-      gap: 18px;
-      margin-bottom: 20px;
+      gap: 16px;
+      margin-bottom: 16px;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .grid-2 { grid-template-columns: 1fr; }
     }
+
     .panel {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 20px;
+      padding: 16px;
+      margin-bottom: 16px;
     }
     .panel-header {
       display: flex;
@@ -129,19 +152,102 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-    .panel-header h2 { font-size: 16px; font-weight: 800; }
+    .panel-header h2 { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 
-    .pending-card {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1.5px solid var(--warning);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 10px;
+    /* TABS SELECTOR (NEGOCIOS VS HISTORIAL PAGOS) */
+    .view-mode-tabs {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
+      gap: 6px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .view-tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .view-tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+
+    /* SEARCH AND FILTERS */
+    .filter-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .search-box-admin {
+      position: relative;
+      width: 100%;
+    }
+    .search-box-admin input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13.5px;
+    }
+    .search-box-admin .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted);
+    }
+
+    .filter-chips-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-chips-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .filter-chip:hover { border-color: #475569; }
+    .filter-chip.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* PENDING CARDS */
+    .pending-card {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1.5px solid var(--warning);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
     }
     .ref-pill {
       display: inline-block;
@@ -150,33 +256,39 @@
       font-weight: 800;
       padding: 3px 9px;
       border-radius: 6px;
-      font-size: 14px;
-      letter-spacing: 1px;
+      font-size: 13.5px;
+      letter-spacing: 0.5px;
+      font-family: monospace;
     }
     .pin-pill {
       display: inline-block;
-      background: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.18);
       color: #34d399;
       border: 1px solid #10b981;
       font-weight: 800;
-      padding: 3px 9px;
+      padding: 3px 8px;
       border-radius: 6px;
-      font-size: 13px;
-      letter-spacing: 1.5px;
+      font-size: 12.5px;
+      letter-spacing: 1px;
+      font-family: monospace;
     }
 
-    .table-wrap { overflow-x: auto; }
+    /* DESKTOP TABLE */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td {
-      padding: 11px 10px;
+      padding: 10px 10px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
-    th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; font-weight: 800; }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+    /* BADGES */
     .badge {
       display: inline-block;
-      padding: 4px 9px;
+      padding: 3px 8px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 800;
@@ -186,6 +298,84 @@
     .badge.pending_validation { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
     .badge.expired, .badge.suspended { background: rgba(239, 68, 68, 0.22); color: #f87171; }
 
+    /* MOBILE BUSINESS CARDS (SE MUESTRAN SOLO EN MÓVIL) */
+    .mobile-cards-view {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mob-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      transition: all 0.15s ease;
+    }
+    .mob-card:hover {
+      border-color: #38bdf8;
+    }
+    .mob-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .mob-card-brand-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mob-card-id {
+      display: inline-block;
+      font-size: 11px;
+      background: rgba(2, 132, 199, 0.2);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-weight: 700;
+      font-family: monospace;
+      margin-top: 3px;
+    }
+    .mob-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .mob-card-grid-item span {
+      display: block;
+      font-size: 10.5px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .mob-card-grid-item strong {
+      font-size: 12.5px;
+      color: var(--text);
+    }
+    .mob-card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .mob-card-actions .btn {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 12px;
+      min-width: 80px;
+      justify-content: center;
+    }
+
+    /* CALC BOX */
     .calc-box {
       display: flex;
       flex-direction: column;
@@ -214,59 +404,165 @@
       letter-spacing: 4px;
       display: block;
       margin-top: 4px;
+      font-family: monospace;
     }
 
-    @keyframes pulseGlow {
-      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
-      70% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    /* MODAL GENERAL STYLES */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
     }
+    .modal-content-card {
+      max-width: 640px;
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      max-height: 92vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+      gap: 10px;
+    }
+
+    /* TOAST */
     .admin-toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       background: #1e293b;
       color: #fff;
       border: 1px solid #38bdf8;
       border-radius: 12px;
-      padding: 14px 18px;
+      padding: 12px 16px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      z-index: 9999;
-      font-size: 13.5px;
+      z-index: 10000;
+      font-size: 13px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       animation: slideInToast 0.25s ease-out;
+      max-width: calc(100vw - 40px);
     }
     @keyframes slideInToast {
       from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+      70% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    /* ADAPTACIONES ESPECÍFICAS PARA MÓVIL */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px 10px 50px 10px;
+      }
+      .topbar {
+        padding: 12px 14px;
+        border-radius: 14px;
+        margin-bottom: 12px;
+      }
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+      }
+      .brand h1 { font-size: 15.5px; }
+      .brand p { font-size: 11px; }
+
+      .topbar-actions {
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .topbar-actions::-webkit-scrollbar { display: none; }
+      .topbar-actions .btn {
+        flex-shrink: 0;
+        font-size: 11.5px;
+        padding: 6px 10px;
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .kpi-card {
+        padding: 10px 12px;
+      }
+      .kpi-card strong {
+        font-size: 20px;
+      }
+      .kpi-card small {
+        font-size: 10.5px;
+      }
+
+      .panel {
+        padding: 12px;
+        border-radius: 14px;
+        margin-bottom: 12px;
+      }
+
+      /* OCULTAR TABLA Y ACTIVAR CARDS EN MÓVIL */
+      .desktop-table-view {
+        display: none !important;
+      }
+      .mobile-cards-view {
+        display: flex !important;
+      }
+
+      .modal-content-card {
+        padding: 16px;
+        border-radius: 16px;
+      }
+    }
   </style>
 </head>
 <body>
+
   <!-- PANTALLA DE ACCESO RESTRINGIDO PARA EL ADMINISTRADOR / DUEÑO -->
-  <div id="adminLockOverlay" style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:#0b1120;">
-    <div style="max-width:400px; width:100%; background:#1e293b; border:1px solid #334155; border-radius:16px; padding:28px 24px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-      <div style="width:56px; height:56px; background:#0284c7; border-radius:14px; margin:0 auto 16px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(2,132,199,0.4);">
-        <img src="icon-postflow.png" alt="PostFlow" style="width:38px; height:38px; border-radius:8px;" />
+  <div id="adminLockOverlay" style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; background:#0b1120;">
+    <div style="max-width:390px; width:100%; background:#1e293b; border:1px solid #334155; border-radius:18px; padding:26px 20px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+      <div style="width:52px; height:52px; background:linear-gradient(135deg, #0284c7, #0369a1); border-radius:14px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(2,132,199,0.4);">
+        <img src="icon-postflow.png" alt="PostFlow" style="width:36px; height:36px; border-radius:8px;" />
       </div>
-      <h2 style="font-size:19px; font-weight:800; margin-bottom:6px; color:#f8fafc;">PostFlow · Panel Maestro</h2>
-      <p style="font-size:12.5px; color:#94a3b8; margin-bottom:18px;">
+      <h2 style="font-size:18px; font-weight:800; margin-bottom:4px; color:#f8fafc;">PostFlow · Panel Maestro</h2>
+      <p style="font-size:12px; color:#94a3b8; margin-bottom:18px;">
         Acceso exclusivo del propietario para monitoreo de licencias y validación de pagos.
       </p>
 
       <form id="formAdminMasterAuth">
-        <div style="margin-bottom:16px;">
+        <div style="margin-bottom:14px;">
           <input
             type="password"
             id="adminMasterKeyInput"
             required
             placeholder="Ingresa Clave Maestra..."
+            autocomplete="current-password"
             style="width:100%; padding:12px; font-size:16px; font-weight:700; text-align:center; background:#0f172a; border:1.5px solid #334155; border-radius:10px; color:#fff;"
           />
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:14px; font-weight:700;">
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px; font-size:13.5px; font-weight:700;">
           🔓 Desbloquear Panel Maestro
         </button>
         <div id="adminAuthError" style="margin-top:10px; font-size:12px; color:#ef4444; display:none;">
@@ -279,62 +575,64 @@
     </div>
   </div>
 
+  <!-- CONTENEDOR PRINCIPAL DEL PANEL MAESTRO -->
   <div class="container" id="adminMainContainer" style="display:none;">
     <header class="topbar">
       <div class="brand">
         <div class="brand-icon">
-          <img src="icon-postflow.png" alt="PostFlow" style="width:38px; height:38px; border-radius:8px; object-fit:contain;" />
+          <img src="icon-postflow.png" alt="PostFlow" style="width:32px; height:32px; border-radius:6px; object-fit:contain;" />
         </div>
         <div>
-          <h1>PostFlow — Panel Maestro de Administración</h1>
-          <p>Control de licencias, respaldos en la nube, validación de Pago Móvil ($20 USD / Euro BCV) y activación remota</p>
+          <h1>PostFlow — Panel Maestro</h1>
+          <p>Control de licencias, respaldos en nube y validación de Pago Móvil ($20 / Euro BCV)</p>
         </div>
       </div>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div class="topbar-actions">
         <button class="btn btn-outline btn-sm" id="btnOpenWaModal">🤖 Bot WhatsApp</button>
-        <button class="btn btn-outline btn-sm" id="btnToggleNotifications">🔔 Activar Notificaciones</button>
-        <button class="btn btn-outline btn-sm" id="btnTestSound" title="Probar sonido de campana de pago">🔊 Probar Alerta</button>
+        <button class="btn btn-outline btn-sm" id="btnToggleNotifications">🔔 Notificaciones</button>
+        <button class="btn btn-outline btn-sm" id="btnTestSound" title="Probar sonido">🔊 Alerta</button>
         <button class="btn btn-outline btn-sm" id="btnRefreshAdmin">🔄 Actualizar</button>
-        <button class="btn btn-danger btn-sm" id="btnAdminLogout" style="padding:8px 12px;">🔒 Salir</button>
-        <a href="index.html" class="btn btn-primary btn-sm">⚡ Ir a App ➔</a>
+        <button class="btn btn-danger btn-sm" id="btnAdminLogout">🔒 Salir</button>
+        <a href="index.html" class="btn btn-primary btn-sm">⚡ App ➔</a>
       </div>
     </header>
 
     <!-- BANNER DE ALERTA DE PAGO EN VIVO -->
-    <div id="adminLiveAlertBanner" style="display:none; background:linear-gradient(90deg, #1e293b, #0f172a); border:2px solid #f59e0b; border-radius:14px; padding:14px 18px; margin-bottom:20px; animation:pulseGlow 2s infinite; box-shadow:0 8px 24px rgba(245,158,11,0.25);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="font-size:28px;">🔔</span>
+    <div id="adminLiveAlertBanner" style="display:none; background:linear-gradient(90deg, #1e293b, #0f172a); border:2px solid #f59e0b; border-radius:14px; padding:12px 16px; margin-bottom:16px; animation:pulseGlow 2s infinite; box-shadow:0 8px 24px rgba(245,158,11,0.25);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:24px;">🔔</span>
           <div>
-            <strong id="liveAlertBannerTitle" style="font-size:15px; color:#fbbf24; display:block;">¡Nuevo Pago Móvil recibido en tiempo real!</strong>
-            <span id="liveAlertBannerDetail" style="font-size:13px; color:#f8fafc;">Negocio: <strong id="alertBrandName">-</strong> | Ref: <span class="ref-pill" id="alertRefPill">#----</span> | Monto: <strong id="alertAmountBs">Bs. 0,00</strong></span>
+            <strong id="liveAlertBannerTitle" style="font-size:14px; color:#fbbf24; display:block;">¡Nuevo Pago Móvil recibido en tiempo real!</strong>
+            <span id="liveAlertBannerDetail" style="font-size:12px; color:#f8fafc;">Negocio: <strong id="alertBrandName">-</strong> | Ref: <span class="ref-pill" id="alertRefPill">#----</span> | Monto: <strong id="alertAmountBs">Bs. 0,00</strong></span>
           </div>
         </div>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:6px;">
           <button class="btn btn-success btn-sm" id="btnQuickApproveLive">✅ Aprobar Inmediatamente</button>
-          <button class="btn btn-outline btn-sm" onclick="dismissLiveBanner()">✕ Ocultar</button>
+          <button class="btn btn-outline btn-sm" onclick="dismissLiveBanner()">✕</button>
         </div>
       </div>
     </div>
 
+    <!-- TARJETAS DE INDICADORES CLAVE (KPIS) -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <span>📱 Total APKs Instaladas</span>
+        <span>📱 Total Negocios</span>
         <strong id="kpiTotalApks">0</strong>
-        <small>Dispositivos registrados</small>
+        <small>Dispositivos con APK/Web</small>
       </div>
       <div class="kpi-card" style="border-color: var(--warning);">
         <span style="color:#fbbf24;">⏳ Pagos por Validar</span>
         <strong id="kpiPendingPayments" style="color:#fbbf24;">0</strong>
-        <small>Esperando tu confirmación bancaria</small>
+        <small>Esperando confirmación bancaria</small>
       </div>
       <div class="kpi-card">
         <span style="color:#60a5fa;">🎁 En Prueba (7 Días)</span>
         <strong id="kpiTrialApks" style="color:#60a5fa;">0</strong>
-        <small>Período inicial gratuito</small>
+        <small>Período gratuito inicial</small>
       </div>
       <div class="kpi-card" style="border-color: var(--success);">
-        <span style="color:#34d399;">💎 Membresías Activas ($20)</span>
+        <span style="color:#34d399;">💎 Membresías Activas</span>
         <strong id="kpiActiveApks" style="color:#34d399;">0</strong>
         <small id="kpiTotalRevenue">Ingresos validados: $0 USD</small>
       </div>
@@ -344,10 +642,10 @@
       <!-- BANDEJA DE PAGOS MÓVILES POR VALIDAR -->
       <div class="panel" style="margin-bottom:0;">
         <div class="panel-header">
-          <h2>🔔 Pagos Móviles Pendientes de Validación ($20 a Tasa Euro BCV)</h2>
-          <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:var(--muted);">
+          <h2>🔔 Pagos Móviles Pendientes de Validación ($20 / Euro BCV)</h2>
+          <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; cursor:pointer; color:var(--muted);">
             <input type="checkbox" id="chkRequireManualApproval" checked />
-            Exigir mi aprobación manual antes de activar
+            Aprobación manual requerida
           </label>
         </div>
         <div id="pendingPaymentsContainer">
@@ -360,105 +658,295 @@
         <div class="panel-header">
           <h2>🔑 Generador de PIN de Activación por WhatsApp</h2>
         </div>
-        <p style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">
-          Si un cliente tiene su APK instalada en otro teléfono fuera de tu red Wi-Fi, pídele su <strong>ID de APK</strong> y los <strong>últimos dígitos de su Referencia</strong> para darle su PIN de desbloqueo inmediato:
+        <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
+          Si un cliente está fuera de línea o en otra ciudad, pídele su <strong>ID de APK</strong> y los <strong>últimos dígitos de su Referencia</strong> para calcular su PIN de desbloqueo:
         </p>
         <div class="calc-box">
           <div>
-            <label style="font-size:12px; color:var(--muted);">ID de Instalación de la APK (ej. REP-4821)</label>
+            <label style="font-size:11.5px; color:var(--muted);">ID de Instalación (ej. REP-4821)</label>
             <input type="text" id="pinCalcLicenseId" placeholder="Ej: REP-4821" />
           </div>
           <div>
-            <label style="font-size:12px; color:var(--muted);">Últimos dígitos de la Referencia Pago Móvil</label>
+            <label style="font-size:11.5px; color:var(--muted);">Últimos dígitos de la Referencia Pago Móvil</label>
             <input type="text" id="pinCalcRefDigits" placeholder="Ej: 4829" />
           </div>
           <div class="result-pin-box">
-            <span style="font-size:11.5px; color:var(--muted);">PIN Maestro de Activación para enviar al cliente:</span>
+            <span style="font-size:11px; color:var(--muted);">PIN Maestro de Activación para el cliente:</span>
             <strong id="pinCalcResult">------</strong>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- TABLA DE TODAS LAS APKS INSTALADAS -->
+    <!-- SECCIÓN PRINCIPAL: SELECTOR DE PESTAÑAS (INSTALACIONES VS AUDITORÍA DE PAGOS) -->
     <div class="panel">
-      <div class="panel-header">
-        <h2>📋 Listado de Todas las APKs / Negocios Instalados</h2>
+      <!-- SELECTOR DE VISTA -->
+      <div class="view-mode-tabs">
+        <button type="button" class="view-tab-btn active" id="tabBtnInstallations" onclick="switchAdminView('installations')">
+          🏬 Negocios e Instalaciones (<span id="countViewInst">0</span>)
+        </button>
+        <button type="button" class="view-tab-btn" id="tabBtnPayments" onclick="switchAdminView('payments')">
+          💳 Auditoría de Pagos Verificados (<span id="countViewPayments">0</span>)
+        </button>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID de APK</th>
-              <th>Nombre de la Repostería</th>
-              <th>Teléfono / WhatsApp</th>
-              <th>Estado</th>
-              <th>Días Restantes / Vencimiento</th>
-              <th>Última Ref. Pago Móvil</th>
-              <th>PIN Desbloqueo</th>
-              <th>☁️ Respaldo Nube</th>
-              <th>Acciones de Administrador</th>
-            </tr>
-          </thead>
-          <tbody id="apksTableBody">
-            <!-- Filas dinámicas -->
-          </tbody>
-        </table>
+
+      <!-- VISTA 1: LISTADO DE NEGOCIOS E INSTALACIONES -->
+      <div id="viewSectionInstallations">
+        <!-- BARRA DE BÚSQUEDA Y FILTROS -->
+        <div class="filter-bar-wrap">
+          <div class="search-box-admin">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="adminSearchInput" placeholder="Buscar por negocio, ID de licencia, teléfono o referencia..." />
+          </div>
+          <div class="filter-chips-row">
+            <button type="button" class="filter-chip active" data-filter="all">Todas (<span id="chipCountAll">0</span>)</button>
+            <button type="button" class="filter-chip" data-filter="pending" style="border-color:rgba(245,158,11,0.5);">⏳ Por Validar (<span id="chipCountPending">0</span>)</button>
+            <button type="button" class="filter-chip" data-filter="active">💎 Activas (<span id="chipCountActive">0</span>)</button>
+            <button type="button" class="filter-chip" data-filter="trial">🎁 En Prueba (<span id="chipCountTrial">0</span>)</button>
+            <button type="button" class="filter-chip" data-filter="expired">⚠️ Vencidas (<span id="chipCountExpired">0</span>)</button>
+            <button type="button" class="filter-chip" data-filter="suspended">🚫 Suspendidas (<span id="chipCountSuspended">0</span>)</button>
+          </div>
+        </div>
+
+        <!-- 1. VISTA DE ESCRITORIO: TABLA COMPLETA -->
+        <div class="table-wrap desktop-table-view">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Licencia</th>
+                <th>Negocio / Marca</th>
+                <th>WhatsApp</th>
+                <th>Estado</th>
+                <th>Vencimiento</th>
+                <th>Última Ref.</th>
+                <th>PIN Maestro</th>
+                <th>☁️ Nube</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="apksTableBody">
+              <!-- Filas dinámicas en desktop -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. VISTA MÓVIL: TARJETAS TÁCTILES ADAPTADAS -->
+        <div class="mobile-cards-view" id="apksMobileCardsContainer">
+          <!-- Tarjetas dinámicas para móvil -->
+        </div>
+      </div>
+
+      <!-- VISTA 2: AUDITORÍA GLOBAL DE PAGOS REGISTRADOS -->
+      <div id="viewSectionPayments" style="display:none;">
+        <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h3 style="font-size:14.5px; font-weight:800; color:#f8fafc;">Historial Cronológico de Pagos Móviles</h3>
+            <p style="font-size:11.5px; color:var(--muted);">Registro contable de pagos validados para renovación de membresías ($20 USD / Euro BCV)</p>
+          </div>
+          <div style="font-size:12px; color:#34d399; font-weight:700;" id="paymentsAuditSummary">
+            Total recaudado: $0 USD
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha Aprobación</th>
+                <th>Negocio</th>
+                <th>ID Licencia</th>
+                <th>Referencia</th>
+                <th>Banco</th>
+                <th>Monto Bs</th>
+                <th>Tasa Euro BCV</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsAuditTableBody">
+              <!-- Filas dinámicas de pagos auditados -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ==================== MODAL: CONFIGURACIÓN DEL BOT DE WHATSAPP DEL ADMINISTRADOR ==================== -->
-  <div id="modalAdminWhatsApp" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-    <div style="max-width:520px; width:100%; background:#1e293b; border:1px solid #334155; border-radius:18px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #334155; padding-bottom:12px;">
+  <!-- ==================== MODAL: FICHA DETALLADA DEL NEGOCIO ==================== -->
+  <div class="modal-overlay" id="modalBusinessDetails">
+    <div class="modal-content-card">
+      <div class="modal-header-row">
         <div style="display:flex; align-items:center; gap:10px;">
-          <div style="width:40px; height:40px; border-radius:10px; background:#25d366; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;">
+          <div id="modalDetIconBox" style="width:42px; height:42px; border-radius:10px; background:linear-gradient(135deg, #0284c7, #0369a1); display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff;">
+            🏬
+          </div>
+          <div>
+            <h3 id="modalDetBrandName" style="font-size:17px; font-weight:800; color:#f8fafc;">Nombre del Negocio</h3>
+            <span id="modalDetLicenseIdPill" style="font-size:11.5px; background:rgba(2,132,199,0.2); color:#38bdf8; padding:2px 8px; border-radius:5px; font-weight:700; font-family:monospace;">REP-XXXX</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeBusinessDetailsModal()" style="padding:4px 8px;">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <!-- ESTADO Y CUENTA REGRESIVA -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <span style="font-size:11px; color:var(--muted); display:block; font-weight:600;">ESTADO DE MEMBRESÍA:</span>
+            <div id="modalDetStatusBadge" style="margin-top:2px;">-</div>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:11px; color:var(--muted); display:block; font-weight:600;">VENCIMIENTO / TIEMPO RESTANTE:</span>
+            <strong id="modalDetExpirationText" style="font-size:13.5px; color:#f8fafc;">-</strong>
+          </div>
+        </div>
+
+        <!-- DATOS DEL CLIENTE Y CONTACTO -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <h4 style="font-size:12px; text-transform:uppercase; color:var(--muted); font-weight:800; margin-bottom:8px;">
+            📞 Información de Contacto y Recuperación
+          </h4>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12.5px; margin-bottom:10px;">
+            <div>
+              <span style="color:var(--muted); font-size:11px; display:block;">WhatsApp / Teléfono:</span>
+              <strong id="modalDetPhone" style="color:#f8fafc;">-</strong>
+            </div>
+            <div>
+              <span style="color:var(--muted); font-size:11px; display:block;">PIN Maestro Actual:</span>
+              <span class="pin-pill" id="modalDetMasterPin">-</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a id="modalDetBtnWaChat" href="#" target="_blank" class="btn btn-success btn-sm" style="flex:1;">
+              💬 Chatear por WhatsApp
+            </a>
+            <a id="modalDetBtnSendRecovery" href="#" target="_blank" class="btn btn-outline btn-sm" style="flex:1;">
+              📲 Enviar Enlace y Clave
+            </a>
+          </div>
+        </div>
+
+        <!-- MÉTRICAS Y DATOS EN LA NUBE -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--muted); font-weight:800;">
+              ☁️ Actividad y Datos en la Nube
+            </h4>
+            <span id="modalDetLastBackupTime" style="font-size:11.5px; color:#38bdf8; font-weight:600;">-</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:8px; margin-bottom:10px;">
+            <div style="background:#1e293b; padding:8px; border-radius:8px; text-align:center;">
+              <span style="font-size:10.5px; color:var(--muted); display:block;">PRODUCTOS</span>
+              <strong id="modalDetStatProds" style="font-size:16px; color:#f8fafc;">0</strong>
+            </div>
+            <div style="background:#1e293b; padding:8px; border-radius:8px; text-align:center;">
+              <span style="font-size:10.5px; color:var(--muted); display:block;">VENTAS POS</span>
+              <strong id="modalDetStatSales" style="font-size:16px; color:#34d399;">0</strong>
+            </div>
+            <div style="background:#1e293b; padding:8px; border-radius:8px; text-align:center;">
+              <span style="font-size:10.5px; color:var(--muted); display:block;">CLIENTES</span>
+              <strong id="modalDetStatCustomers" style="font-size:16px; color:#60a5fa;">0</strong>
+            </div>
+            <div style="background:#1e293b; padding:8px; border-radius:8px; text-align:center;">
+              <span style="font-size:10.5px; color:var(--muted); display:block;">USUARIOS</span>
+              <strong id="modalDetStatUsers" style="font-size:16px; color:#fbbf24;">0</strong>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="modalDetBtnDownloadJson" style="width:100%;">
+            💾 Descargar Respaldo Completo en Archivo JSON
+          </button>
+        </div>
+
+        <!-- HISTORIAL DE PAGOS DE ESTE NEGOCIO -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <h4 style="font-size:12px; text-transform:uppercase; color:var(--muted); font-weight:800; margin-bottom:8px;">
+            💳 Historial de Pagos de este Negocio
+          </h4>
+          <div id="modalDetPaymentsList" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; font-size:12px;">
+            <!-- Lista de pagos -->
+          </div>
+        </div>
+
+        <!-- ACCIONES RÁPIDAS DE CONTROL MAESTRO -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <h4 style="font-size:12px; text-transform:uppercase; color:var(--muted); font-weight:800; margin-bottom:8px;">
+            ⚡ Acciones Administrativas Inmediatas
+          </h4>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button type="button" class="btn btn-success btn-sm" id="modalDetBtnApprove30">
+              ✅ Activar 30 Días ($20)
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" id="modalDetBtnGrant7">
+              🎁 +7 Días Prueba
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" id="modalDetBtnGrant90">
+              💎 Activar 90 Días ($55)
+            </button>
+            <button type="button" class="btn btn-warning btn-sm" id="modalDetBtnSuspend">
+              🚫 Suspender APK
+            </button>
+          </div>
+          <div style="margin-top:10px; border-top:1px solid #334155; padding-top:10px; display:flex; justify-content:flex-end;">
+            <button type="button" class="btn btn-danger btn-sm" id="modalDetBtnDelete">
+              🗑️ Eliminar Registro de Base de Datos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: CONFIGURACIÓN DEL BOT DE WHATSAPP ==================== -->
+  <div class="modal-overlay" id="modalAdminWhatsApp">
+    <div class="modal-content-card" style="max-width:500px;">
+      <div class="modal-header-row">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:38px; height:38px; border-radius:10px; background:#25d366; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;">
             🤖
           </div>
           <div>
-            <h3 style="font-size:17px; font-weight:800; color:#f8fafc;">Bot de WhatsApp para el Administrador</h3>
-            <small style="color:#94a3b8; font-size:11.5px;">Alertas automáticas en tu celular con cada pago reportado</small>
+            <h3 style="font-size:16px; font-weight:800; color:#f8fafc;">Bot de WhatsApp para el Admin</h3>
+            <small style="color:#94a3b8; font-size:11px;">Alertas inmediatas en tu celular con cada pago</small>
           </div>
         </div>
-        <button class="btn btn-outline btn-sm" id="btnCloseWaModal" style="padding:4px 9px;">✕</button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnCloseWaModal" style="padding:4px 8px;">✕</button>
       </div>
 
       <!-- ESTADO DE LA CONEXIÓN DEL BOT -->
-      <div style="background:#0f172a; border:1px solid #334155; border-radius:12px; padding:14px; margin-bottom:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:12.5px; color:#94a3b8; font-weight:600;">Estado de Conexión del Bot:</span>
-          <span id="waBotStatusBadge" style="font-size:11.5px; font-weight:800; padding:3px 10px; border-radius:20px; background:#334155; color:#94a3b8;">
+      <div style="background:#0f172a; border:1px solid #334155; border-radius:12px; padding:12px; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:12px; color:#94a3b8; font-weight:600;">Estado de Conexión:</span>
+          <span id="waBotStatusBadge" style="font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; background:#334155; color:#94a3b8;">
             CONSULTANDO...
           </span>
         </div>
 
-        <div id="waBotConnectedInfo" style="display:none; font-size:12.5px; color:#38bdf8; margin-top:6px; background:rgba(56,189,248,0.1); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
+        <div id="waBotConnectedInfo" style="display:none; font-size:12px; color:#38bdf8; margin-top:6px; background:rgba(56,189,248,0.1); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
           ✅ Bot vinculado a WhatsApp: <strong id="waBotPhoneText">-</strong>
         </div>
 
-        <!-- CONTENEDOR DEL CÓDIGO QR SI FALTA VINCULAR -->
-        <div id="waBotQrBox" style="display:none; text-align:center; padding:10px 0; margin-top:8px;">
-          <p style="font-size:12.5px; color:#fbbf24; font-weight:700; margin-bottom:10px;">
-            📲 Escanea este Código QR con WhatsApp en tu celular:
+        <!-- CONTENEDOR DEL CÓDIGO QR -->
+        <div id="waBotQrBox" style="display:none; text-align:center; padding:8px 0; margin-top:6px;">
+          <p style="font-size:12px; color:#fbbf24; font-weight:700; margin-bottom:8px;">
+            📲 Escanea este QR con WhatsApp en tu celular:
           </p>
-          <div style="display:inline-block; background:#fff; padding:10px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.3);">
-            <img id="waBotQrImg" src="" alt="QR WhatsApp" style="width:190px; height:190px; display:block;" />
+          <div style="display:inline-block; background:#fff; padding:8px; border-radius:10px;">
+            <img id="waBotQrImg" src="" alt="QR WhatsApp" style="width:180px; height:180px; display:block;" />
           </div>
-          <small style="display:block; font-size:11px; color:#94a3b8; margin-top:8px; line-height:1.4;">
-            Abre WhatsApp en tu celular ➔ Ajustes / Menú (tres puntos) ➔ <strong>Dispositivos vinculados</strong> ➔ <strong>Vincular un dispositivo</strong>.
+          <small style="display:block; font-size:10.5px; color:#94a3b8; margin-top:6px; line-height:1.4;">
+            WhatsApp en celular ➔ Ajustes (tres puntos) ➔ <strong>Dispositivos vinculados</strong> ➔ <strong>Vincular dispositivo</strong>.
           </small>
         </div>
 
-        <div id="waBotLocalNotice" style="display:none; font-size:11.5px; color:#f59e0b; margin-top:8px; line-height:1.4;">
+        <div id="waBotLocalNotice" style="display:none; font-size:11px; color:#f59e0b; margin-top:6px; line-height:1.4;">
           💡 Para vincular el QR por primera vez en esta computadora, abre el panel en <a href="http://localhost:8080/admin.html" target="_blank" style="color:#38bdf8; text-decoration:underline;">http://localhost:8080/admin.html</a>.
         </div>
       </div>
 
-      <!-- FORMULARIO DE CONFIGURACIÓN DEL RECEPTOR DE ALERTAS -->
+      <!-- FORMULARIO DE NÚMERO RECEPTOR -->
       <form id="formAdminWaConfig">
-        <div style="margin-bottom:14px;">
-          <label style="display:block; font-size:12.5px; color:#94a3b8; font-weight:700; margin-bottom:6px;">
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:12px; color:#94a3b8; font-weight:700; margin-bottom:4px;">
             📱 Tu Teléfono de WhatsApp (Donde recibirás las alertas):
           </label>
           <input
@@ -467,30 +955,30 @@
             placeholder="Ej: 04127049393 ó 584127049393"
             value="04127049393"
             required
-            style="width:100%; padding:10px 12px; font-size:14px; font-weight:700; background:#0f172a; border:1px solid #334155; border-radius:9px; color:#f8fafc;"
+            style="width:100%; padding:9px 12px; font-size:13.5px; font-weight:700; background:#0f172a; border:1px solid #334155; border-radius:8px; color:#f8fafc;"
           />
-          <small style="font-size:11px; color:#64748b; display:block; margin-top:4px;">
-            A este número llegarán los avisos inmediatos con el nombre del cliente, la referencia del pago, el monto y el PIN de desbloqueo.
+          <small style="font-size:10.5px; color:#64748b; display:block; margin-top:4px;">
+            A este número llegarán avisos inmediatos con cliente, referencia, monto y PIN.
           </small>
         </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#f8fafc; cursor:pointer;">
-            <input type="checkbox" id="chkAdminNotifyOnPayment" checked style="width:17px; height:17px;" />
-            <span>🔔 Notificarme por WhatsApp automáticamente con cada nuevo pago reportado</span>
+        <div style="margin-bottom:14px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:#f8fafc; cursor:pointer;">
+            <input type="checkbox" id="chkAdminNotifyOnPayment" checked style="width:16px; height:16px;" />
+            <span>🔔 Notificarme por WhatsApp con cada nuevo pago</span>
           </label>
         </div>
 
-        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; border-top:1px solid #334155; padding-top:14px;">
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; border-top:1px solid #334155; padding-top:12px;">
           <button type="button" class="btn btn-outline btn-sm" id="btnTestWaMessage">
             📲 Probar Envío
           </button>
-          <div style="display:flex; gap:8px;">
+          <div style="display:flex; gap:6px;">
             <button type="button" class="btn btn-danger btn-sm" id="btnAdminWaLogout" style="display:none;">
               Desvincular
             </button>
             <button type="submit" class="btn btn-success btn-sm">
-              💾 Guardar Cambios
+              💾 Guardar
             </button>
           </div>
         </div>
@@ -501,11 +989,16 @@
   <script>
     const FIREBASE_RTDB_URL = 'https://reposteria-sistema-pos-default-rtdb.firebaseio.com/reposteria_licenses';
     let cachedInstallationsMap = {};
+    let cachedBackupsMap = {};
     let knownPaymentKeys = new Set();
     let hasLoadedInitialData = false;
     let latestPendingInst = null;
+    let currentAdminFilter = 'all';
+    let currentAdminSearch = '';
+    let currentAdminView = 'installations'; // 'installations' | 'payments'
+    let currentDetailInstId = null;
 
-    // UTILIDAD DE SEGURIDAD CONTRA ATAQUES XSS
+    // UTILIDAD CONTRA ATAQUES XSS
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -536,20 +1029,18 @@
           osc.stop(ctx.currentTime + start + duration);
         };
 
-        // Ráfaga de campanas alegres (Do5 - Mi5 - Sol5 - Do6)
         playTone(523.25, 0.00, 0.20, 0.25);
         playTone(659.25, 0.12, 0.20, 0.25);
         playTone(783.99, 0.24, 0.30, 0.30);
         playTone(1046.50, 0.38, 0.45, 0.35);
 
-        // Segunda campana de confirmación bancaria
         setTimeout(() => {
           try {
             const ctx2 = new AudioCtx();
             const osc = ctx2.createOscillator();
             const gain = ctx2.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(1318.51, ctx2.currentTime); // Mi6 brillante
+            osc.frequency.setValueAtTime(1318.51, ctx2.currentTime);
             gain.gain.setValueAtTime(0.3, ctx2.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 0.5);
             osc.connect(gain);
@@ -590,10 +1081,10 @@
       toast.className = 'admin-toast';
       toast.innerHTML = `<span>${msg}</span>`;
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4500);
+      setTimeout(() => toast.remove(), 4200);
     }
 
-    // NOTIFICACIONES NATIVAS DEL SISTEMA (DESKTOP / PUSH)
+    // NOTIFICACIONES NATIVAS
     function updateNotificationButtonUI() {
       const btn = document.getElementById('btnToggleNotifications');
       if (!btn) return;
@@ -602,15 +1093,15 @@
         return;
       }
       if (Notification.permission === 'granted') {
-        btn.innerHTML = '🔔 Notificaciones: <strong style="color:#34d399;">ACTIVAS</strong>';
+        btn.innerHTML = '🔔 Notificaciones: <strong style="color:#34d399;">ON</strong>';
         btn.classList.add('btn-success');
         btn.classList.remove('btn-outline');
       } else if (Notification.permission === 'denied') {
-        btn.innerHTML = '🔕 Notificaciones: <strong style="color:#f87171;">BLOQUEADAS</strong>';
+        btn.innerHTML = '🔕 Notificaciones: <strong style="color:#f87171;">OFF</strong>';
         btn.classList.remove('btn-success');
         btn.classList.add('btn-outline');
       } else {
-        btn.innerHTML = '🔔 Activar Notificaciones';
+        btn.innerHTML = '🔔 Notificaciones';
         btn.classList.remove('btn-success');
         btn.classList.add('btn-outline');
       }
@@ -624,7 +1115,7 @@
       if (Notification.permission === 'granted') {
         playAdminPaymentSound();
         new Notification('🔔 PostFlow Panel Maestro', {
-          body: '¡Las notificaciones en tiempo real ya están activas! Recibirás alertas cada vez que un cliente reporte un Pago Móvil.',
+          body: 'Notificaciones activas. Recibirás alertas con cada Pago Móvil reportado.',
           icon: 'icon-postflow.png'
         });
         showAdminToast('🔔 Notificaciones de escritorio ya activas');
@@ -634,7 +1125,7 @@
         if (perm === 'granted') {
           playAdminPaymentSound();
           new Notification('🔔 PostFlow: Notificaciones Activadas', {
-            body: '¡Excelente! Ahora recibirás una alerta inmediata con cada nuevo pago reportado.',
+            body: '¡Listo! Te avisaremos de inmediato cada vez que un cliente reporte un pago.',
             icon: 'icon-postflow.png'
           });
           showAdminToast('✅ Notificaciones de escritorio activadas');
@@ -696,15 +1187,37 @@
       const ref = document.getElementById('pinCalcRefDigits').value.trim();
       document.getElementById('pinCalcResult').textContent = generateUnlockPinClient(id, ref);
     }
+    document.getElementById('pinCalcLicenseId')?.addEventListener('input', updatePinCalculator);
+    document.getElementById('pinCalcRefDigits')?.addEventListener('input', updatePinCalculator);
 
-    document.getElementById('pinCalcLicenseId').addEventListener('input', updatePinCalculator);
-    document.getElementById('pinCalcRefDigits').addEventListener('input', updatePinCalculator);
+    // ALTERNADOR DE VISTAS (NEGOCIOS VS AUDITORÍA DE PAGOS)
+    function switchAdminView(view) {
+      currentAdminView = view;
+      const tabInst = document.getElementById('tabBtnInstallations');
+      const tabPay = document.getElementById('tabBtnPayments');
+      const secInst = document.getElementById('viewSectionInstallations');
+      const secPay = document.getElementById('viewSectionPayments');
 
+      if (view === 'installations') {
+        tabInst?.classList.add('active');
+        tabPay?.classList.remove('active');
+        if (secInst) secInst.style.display = 'block';
+        if (secPay) secPay.style.display = 'none';
+      } else {
+        tabPay?.classList.add('active');
+        tabInst?.classList.remove('active');
+        if (secInst) secInst.style.display = 'none';
+        if (secPay) secPay.style.display = 'block';
+      }
+    }
+
+    // CARGA DE DATOS DE FIREBASE RTDB Y SERVIDOR LOCAL
     async function loadAdminData() {
       const mergedMap = {};
+      const backupsMap = {};
       let requireManualApproval = true;
 
-      // 1. Cargar desde Firebase Realtime Database (Nube 24/7)
+      // 1. Firebase RTDB
       if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
         try {
           const fbRes = await fetch(`${FIREBASE_RTDB_URL}.json`);
@@ -714,9 +1227,29 @@
               if (fbData.config && typeof fbData.config.requireManualApproval === 'boolean') {
                 requireManualApproval = fbData.config.requireManualApproval;
               }
+              if (fbData.backups) {
+                Object.entries(fbData.backups).forEach(([lid, b]) => {
+                  backupsMap[lid] = b;
+                });
+              }
               if (fbData.installations) {
                 Object.values(fbData.installations).forEach((inst) => {
-                  if (inst && inst.licenseId) mergedMap[inst.licenseId] = inst;
+                  if (inst && inst.licenseId) {
+                    const b = backupsMap[inst.licenseId];
+                    // Enriquecer registro con datos del respaldo en nube si existen
+                    inst.status = inst.status || (b && b.data && b.data.membership && b.data.membership.status) || 'trial';
+                    inst.expiresAt = inst.expiresAt || (b && b.data && b.data.membership && b.data.membership.expiresAt);
+                    inst.stats = inst.stats || (b && b.data && {
+                      products: (b.data.products || []).length,
+                      sales: (b.data.sales || []).length,
+                      orders: (b.data.orders || []).length,
+                      customers: (b.data.customers || []).length
+                    }) || { products: 0, sales: 0, orders: 0, customers: 0 };
+                    inst.brandName = inst.brandName || (b && b.brandName) || 'PostFlow Negocio';
+                    inst.brandPhone = inst.brandPhone || (b && b.brandPhone) || '';
+                    inst.lastBackupAt = inst.lastBackupAt || (b && b.updatedAt);
+                    mergedMap[inst.licenseId] = inst;
+                  }
                 });
               }
             }
@@ -726,7 +1259,7 @@
         }
       }
 
-      // 2. Cargar también desde servidor local si está activo
+      // 2. Servidor local si está disponible
       try {
         const res = await fetch('/api/admin/licenses');
         if (res.ok) {
@@ -743,6 +1276,8 @@
       } catch (_) {}
 
       cachedInstallationsMap = mergedMap;
+      cachedBackupsMap = backupsMap;
+
       renderAdminDashboard({
         requireManualApproval,
         installations: Object.values(mergedMap)
@@ -751,24 +1286,54 @@
 
     function renderAdminDashboard(data) {
       const list = data.installations || [];
-      document.getElementById('chkRequireManualApproval').checked = Boolean(data.requireManualApproval);
+      const chk = document.getElementById('chkRequireManualApproval');
+      if (chk) chk.checked = Boolean(data.requireManualApproval);
 
       const pendingList = list.filter((x) => x.status === 'pending_validation' || x.pendingPayment);
       const trialList = list.filter((x) => x.status === 'trial');
       const activeList = list.filter((x) => x.status === 'active');
-
-      let totalPaymentsCount = 0;
-      list.forEach((x) => {
-        totalPaymentsCount += (x.payments || []).length;
+      const expiredList = list.filter((x) => {
+        if (x.status === 'expired') return true;
+        if (!x.expiresAt) return false;
+        return new Date(x.expiresAt).getTime() <= Date.now();
       });
+      const suspendedList = list.filter((x) => x.status === 'suspended');
+
+      // Calcular todos los pagos globales verificados
+      const allAuditPayments = [];
+      let totalRevenueUSD = 0;
+      let totalRevenueBs = 0;
+
+      list.forEach((inst) => {
+        const pList = Array.isArray(inst.payments) ? inst.payments : [];
+        pList.forEach((pay) => {
+          allAuditPayments.push({ ...pay, licenseId: inst.licenseId, brandName: inst.brandName, phone: inst.brandPhone });
+          totalRevenueUSD += (pay.usdAmount || 20);
+          totalRevenueBs += Number(pay.amountBs || 0);
+        });
+      });
+
+      // Ordenar pagos del más reciente al más antiguo
+      allAuditPayments.sort((a, b) => new Date(b.approvedAt || 0) - new Date(a.approvedAt || 0));
+
+      // Actualizar Contadores de Vistas y Chips
+      document.getElementById('countViewInst').textContent = list.length;
+      document.getElementById('countViewPayments').textContent = allAuditPayments.length;
+      document.getElementById('chipCountAll').textContent = list.length;
+      document.getElementById('chipCountPending').textContent = pendingList.length;
+      document.getElementById('chipCountActive').textContent = activeList.length;
+      document.getElementById('chipCountTrial').textContent = trialList.length;
+      document.getElementById('chipCountExpired').textContent = expiredList.length;
+      document.getElementById('chipCountSuspended').textContent = suspendedList.length;
 
       document.getElementById('kpiTotalApks').textContent = list.length;
       document.getElementById('kpiPendingPayments').textContent = pendingList.length;
       document.getElementById('kpiTrialApks').textContent = trialList.length;
       document.getElementById('kpiActiveApks').textContent = activeList.length;
-      document.getElementById('kpiTotalRevenue').textContent = `Ingresos validados: $${totalPaymentsCount * 20} USD (${totalPaymentsCount} pagos)`;
+      document.getElementById('kpiTotalRevenue').textContent = `Total validado: $${totalRevenueUSD} USD (${allAuditPayments.length} pagos)`;
+      document.getElementById('paymentsAuditSummary').textContent = `Total Recaudado: $${totalRevenueUSD} USD · Bs. ${totalRevenueBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
 
-      // DETECCIÓN REACTIVA DE NUEVOS PAGOS EN TIEMPO REAL
+      // DETECCIÓN REACTIVA DE NUEVOS PAGOS
       const currentKeys = new Set();
       let newestItem = null;
 
@@ -789,9 +1354,8 @@
         showAdminToast(`🔔 ¡Nuevo Pago Recibido! Negocio: "${newestItem.inst.brandName}" (Ref #${newestItem.p.refDigits})`);
       }
 
-      // Actualizar Título Dinámico de la Pestaña
       if (pendingList.length > 0) {
-        document.title = `(${pendingList.length}) 🔔 NUEVO PAGO RECIBIDO — PostFlow Maestro`;
+        document.title = `(${pendingList.length}) 🔔 NUEVO PAGO — PostFlow Maestro`;
       } else {
         document.title = `PostFlow — Panel Maestro de Administración`;
         dismissLiveBanner();
@@ -800,184 +1364,471 @@
       knownPaymentKeys = currentKeys;
       hasLoadedInitialData = true;
 
-      // Renderizar bandeja de pendientes con tarjeta enriquecida
+      // 1. BANDEJA DE PAGOS PENDIENTES
+      renderPendingPaymentsBox(pendingList);
+
+      // 2. FILTRADO Y RENDERIZADO DE INSTALACIONES (TABLA + CARDS MÓVIL)
+      renderFilteredInstallations(list);
+
+      // 3. TABLA DE AUDITORÍA GLOBAL DE PAGOS
+      renderPaymentsAuditTable(allAuditPayments);
+    }
+
+    function renderPendingPaymentsBox(pendingList) {
       const pendingBox = document.getElementById('pendingPaymentsContainer');
+      if (!pendingBox) return;
+
       if (pendingList.length === 0) {
-        pendingBox.innerHTML = `<div style="padding:18px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:12px;">✅ No hay referencias de Pago Móvil pendientes por verificar en este momento.</div>`;
-      } else {
-        pendingBox.innerHTML = pendingList
-          .map((inst) => {
-            const p = inst.pendingPayment || {};
-            const pin = generateUnlockPinClient(inst.licenseId, p.refDigits);
-            const cleanPhone = (inst.brandPhone || p.payerPhone || '').replace(/[^0-9]/g, '');
-            const reportedTime = p.reportedAt
-              ? new Date(p.reportedAt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
-              : 'Reciente';
-
-            const waMsg = encodeURIComponent(
-              `✅ ¡Hola *${inst.brandName}*! Hemos validado tu Pago Móvil (Ref: #${p.refDigits || ''}). Tu membresía PostFlow ya está activa por 30 días. Si estás sin conexión al servidor, tu PIN Maestro de activación inmediata es: *${pin}*`
-            );
-            const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${waMsg}` : null;
-
-            const sBrand = escapeHtml(inst.brandName || 'PostFlow Negocio');
-            const sLicense = escapeHtml(inst.licenseId);
-            const sPhone = escapeHtml(inst.brandPhone || 'No registrado');
-            const sPayer = escapeHtml(p.payerPhone || '');
-            const sRef = escapeHtml(p.refDigits || '----');
-            const sBank = escapeHtml(p.bankName || 'Pago Móvil');
-            const sPin = escapeHtml(pin);
-
-            return `
-              <div class="pending-card" style="border:1.5px solid var(--warning); background:rgba(245, 158, 11, 0.08); border-radius:14px; padding:16px; margin-bottom:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-                  <div>
-                    <div style="font-size:16px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
-                      🏬 ${sBrand}
-                      <span style="font-size:11.5px; background:rgba(2,132,199,0.2); color:#38bdf8; padding:2px 8px; border-radius:6px; font-weight:700;">${sLicense}</span>
-                    </div>
-                    <div style="font-size:12.5px; color:var(--muted); margin-top:3px;">
-                      📱 WhatsApp: <strong>${sPhone}</strong> ${sPayer ? `· Pagador: <strong>${sPayer}</strong>` : ''}
-                    </div>
-                  </div>
-                  <div style="text-align:right;">
-                    <span style="font-size:11px; background:#f59e0b; color:#0f172a; padding:3px 8px; border-radius:6px; font-weight:800;">
-                      ⏳ ESPERANDO TU APROBACIÓN
-                    </span>
-                    <div style="font-size:11.5px; color:var(--muted); margin-top:4px;">
-                      🕒 Reportado: ${escapeHtml(reportedTime)}
-                    </div>
-                  </div>
-                </div>
-
-                <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; font-size:12.5px;">
-                  <div>
-                    <span style="color:var(--muted); display:block; font-size:11px;">ÚLTIMOS DÍGITOS REF:</span>
-                    <span class="ref-pill" style="font-size:16px; font-weight:800; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px;">#${sRef}</span>
-                  </div>
-                  <div>
-                    <span style="color:var(--muted); display:block; font-size:11px;">BANCO EMISOR:</span>
-                    <strong style="color:#f8fafc;">${sBank}</strong>
-                  </div>
-                  <div>
-                    <span style="color:var(--muted); display:block; font-size:11px;">MONTO EN BS:</span>
-                    <strong style="color:#34d399; font-size:15px;">Bs. ${Number(p.amountBs || 0).toFixed(2)}</strong>
-                  </div>
-                  <div>
-                    <span style="color:var(--muted); display:block; font-size:11px;">TASA EURO BCV:</span>
-                    <span>${p.rateEurBcv ? `${escapeHtml(p.rateEurBcv)} Bs/€` : 'Oficial'}</span>
-                  </div>
-                  <div>
-                    <span style="color:var(--muted); display:block; font-size:11px;">PIN MAESTRO:</span>
-                    <span class="pin-pill">${sPin}</span>
-                  </div>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                  <div style="font-size:12px; color:#94a3b8;">
-                    💡 Al presionar <strong>"Aprobar y Activar"</strong> la app del cliente se desbloquea en vivo.
-                  </div>
-                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${sLicense}')">
-                      ✅ Aprobar y Activar (+30d)
-                    </button>
-                    ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm">💬 Notificar por WhatsApp</a>` : ''}
-                    <button class="btn btn-danger btn-sm" onclick="adminAction('reject_payment', '${sLicense}')">
-                      ❌ Rechazar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `;
-          })
-          .join('');
-      }
-
-      // Renderizar tabla general
-      const tbody = document.getElementById('apksTableBody');
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--muted); padding:20px;">Aún no hay APKs registradas. Abre la aplicación principal para registrar la primera instalación.</td></tr>`;
+        pendingBox.innerHTML = `<div style="padding:16px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:12px; font-size:12.5px;">✅ No hay pagos móviles pendientes por verificar en este momento.</div>`;
         return;
       }
 
-      tbody.innerHTML = list
+      pendingBox.innerHTML = pendingList
         .map((inst) => {
-          const diffDays = inst.expiresAt
-            ? Math.ceil((new Date(inst.expiresAt).getTime() - Date.now()) / 86400000)
-            : 0;
-          const lastPay = inst.pendingPayment || (inst.payments && inst.payments[0]) || null;
-          const refText = lastPay ? `#${lastPay.refDigits} (Bs. ${Number(lastPay.amountBs || 0).toFixed(2)})` : '-';
-          const pinText = lastPay ? generateUnlockPinClient(inst.licenseId, lastPay.refDigits) : '-';
+          const p = inst.pendingPayment || {};
+          const pin = generateUnlockPinClient(inst.licenseId, p.refDigits);
+          const cleanPhone = (inst.brandPhone || p.payerPhone || '').replace(/[^0-9]/g, '');
+          const reportedTime = p.reportedAt
+            ? new Date(p.reportedAt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+            : 'Reciente';
 
-          let statusLabel = '🎁 Prueba 7d';
-          if (inst.status === 'active') statusLabel = '💎 Activa ($20)';
-          if (inst.status === 'pending_validation') statusLabel = '⏳ Por Validar';
-          if (inst.status === 'expired' || diffDays <= 0) statusLabel = '⚠️ Vencida';
-          if (inst.status === 'suspended') statusLabel = '🚫 Suspendida';
+          const waMsg = encodeURIComponent(
+            `✅ ¡Hola *${inst.brandName}*! Hemos validado tu Pago Móvil (Ref: #${p.refDigits || ''}). Tu membresía PostFlow ya está activa por 30 días. Si estás sin conexión, tu PIN Maestro de activación inmediata es: *${pin}*`
+          );
+          const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${waMsg}` : null;
 
-          const stats = inst.stats || {};
-          const prodCount = typeof stats.products === 'number' ? stats.products : null;
-          const salesCount = typeof stats.sales === 'number' ? stats.sales : null;
-          const backupTimeStr = inst.lastBackupAt ? new Date(inst.lastBackupAt).toLocaleString('es-VE', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
-          const backupCell = backupTimeStr
-            ? `<strong>☁️ ${backupTimeStr}</strong><br><small style="color:var(--muted);">${prodCount !== null ? `${prodCount} prods, ${salesCount} vtas` : 'Al día'}</small>`
-            : `<span style="color:var(--muted); font-size:12px;">Sin datos aún</span>`;
-
-          const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
-          const recoveryWaUrl = cleanPhone
-            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola *${inst.brandName}*, para acceder a tu sistema PostFlow entra a https://reposteria-sistema-pos.web.app con tu ID: *${inst.licenseId}*.`)}`
-            : null;
-
-          const sLicenseId = escapeHtml(inst.licenseId);
-          const sBrandName = escapeHtml(inst.brandName || 'PostFlow Negocio');
-          const sBrandPhone = escapeHtml(inst.brandPhone || '-');
-          const sRefText = escapeHtml(refText);
-          const sPinText = escapeHtml(pinText);
+          const sBrand = escapeHtml(inst.brandName || 'PostFlow Negocio');
+          const sLicense = escapeHtml(inst.licenseId);
+          const sPhone = escapeHtml(inst.brandPhone || 'No registrado');
+          const sPayer = escapeHtml(p.payerPhone || '');
+          const sRef = escapeHtml(p.refDigits || '----');
+          const sBank = escapeHtml(p.bankName || 'Pago Móvil');
+          const sPin = escapeHtml(pin);
 
           return `
-            <tr>
-              <td><strong>${sLicenseId}</strong></td>
-              <td><strong>🏬 ${sBrandName}</strong></td>
-              <td>${sBrandPhone}</td>
-              <td><span class="badge ${inst.status}">${statusLabel}</span></td>
-              <td>
-                <strong>${diffDays > 0 ? `${diffDays} día(s)` : '0 días (Vencido)'}</strong><br>
-                <small style="color:var(--muted);">${inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString('es-VE') : '-'}</small>
-              </td>
-              <td>${sRefText}</td>
-              <td><span class="pin-pill">${sPinText}</span></td>
-              <td>${backupCell}</td>
-              <td>
+            <div class="pending-card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                <div>
+                  <div style="font-size:15px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px;">
+                    🏬 ${sBrand}
+                    <span style="font-size:11px; background:rgba(2,132,199,0.2); color:#38bdf8; padding:2px 7px; border-radius:5px; font-family:monospace;">${sLicense}</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--muted); margin-top:2px;">
+                    📱 WhatsApp: <strong>${sPhone}</strong> ${sPayer ? `· Pagador: <strong>${sPayer}</strong>` : ''}
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size:10.5px; background:#f59e0b; color:#0f172a; padding:2px 7px; border-radius:5px; font-weight:800;">
+                    ⏳ POR VALIDAR
+                  </span>
+                  <div style="font-size:11px; color:var(--muted); margin-top:3px;">
+                    🕒 ${escapeHtml(reportedTime)}
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:8px; font-size:12px;">
+                <div>
+                  <span style="color:var(--muted); display:block; font-size:10px;">REFERENCIA:</span>
+                  <span class="ref-pill">#${sRef}</span>
+                </div>
+                <div>
+                  <span style="color:var(--muted); display:block; font-size:10px;">BANCO:</span>
+                  <strong style="color:#f8fafc;">${sBank}</strong>
+                </div>
+                <div>
+                  <span style="color:var(--muted); display:block; font-size:10px;">MONTO BS:</span>
+                  <strong style="color:#34d399; font-size:14px;">Bs. ${Number(p.amountBs || 0).toFixed(2)}</strong>
+                </div>
+                <div>
+                  <span style="color:var(--muted); display:block; font-size:10px;">PIN DESBLOQUEO:</span>
+                  <span class="pin-pill">${sPin}</span>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openBusinessDetailsModal('${sLicense}')">
+                  🔍 Ver Ficha Completa
+                </button>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <button class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${sLicenseId}')" title="Activar Membresía 30 días">
-                    ✅ Activar 30d
+                  <button type="button" class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${sLicense}')">
+                    ✅ Aprobar (+30d)
                   </button>
-                  <button class="btn btn-outline btn-sm" onclick="adminAction('grant_days', '${sLicenseId}', 7)" title="Dar 7 días extra">
-                    +7d Prueba
-                  </button>
-                  ${recoveryWaUrl ? `<a href="${recoveryWaUrl}" target="_blank" class="btn btn-outline btn-sm" title="Enviar ID de Negocio por WhatsApp">📲 Enviar ID</a>` : ''}
-                  <button class="btn btn-outline btn-sm" onclick="downloadBackupJsonAdmin('${sLicenseId}', '${sBrandName}')" title="Descargar copia del negocio en JSON">
-                    💾 JSON
-                  </button>
-                  <button class="btn btn-warning btn-sm" onclick="adminAction('suspend', '${sLicenseId}')" title="Suspender / Bloquear APK">
-                    🚫 Bloquear
-                  </button>
-                  <button class="btn btn-danger btn-sm" onclick="adminAction('delete', '${sLicenseId}')" title="Eliminar registro">
-                    🗑️
+                  ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm">💬 WhatsApp</a>` : ''}
+                  <button type="button" class="btn btn-danger btn-sm" onclick="adminAction('reject_payment', '${sLicense}')">
+                    ❌ Rechazar
                   </button>
                 </div>
-              </td>
-            </tr>
+              </div>
+            </div>
           `;
         })
         .join('');
     }
 
+    function renderFilteredInstallations(rawList) {
+      const q = (currentAdminSearch || '').toLowerCase().trim();
+      const f = currentAdminFilter;
+
+      const filtered = rawList.filter((inst) => {
+        // Filtro por texto
+        const matchText = !q ||
+          (inst.brandName && inst.brandName.toLowerCase().includes(q)) ||
+          (inst.licenseId && inst.licenseId.toLowerCase().includes(q)) ||
+          (inst.brandPhone && inst.brandPhone.includes(q)) ||
+          (inst.pendingPayment && inst.pendingPayment.refDigits && inst.pendingPayment.refDigits.includes(q));
+
+        if (!matchText) return false;
+
+        // Filtro por estado
+        const isPending = inst.status === 'pending_validation' || Boolean(inst.pendingPayment);
+        const isTrial = inst.status === 'trial';
+        const isActive = inst.status === 'active';
+        const isSuspended = inst.status === 'suspended';
+        const isExpired = inst.status === 'expired' || (inst.expiresAt && new Date(inst.expiresAt).getTime() <= Date.now());
+
+        if (f === 'pending') return isPending;
+        if (f === 'active') return isActive;
+        if (f === 'trial') return isTrial;
+        if (f === 'expired') return isExpired;
+        if (f === 'suspended') return isSuspended;
+        return true;
+      });
+
+      // 1. RENDERIZADO EN TABLA DE ESCRITORIO
+      const tbody = document.getElementById('apksTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--muted); padding:20px;">No se encontraron negocios para los filtros seleccionados.</td></tr>`;
+      } else {
+        tbody.innerHTML = filtered.map((inst) => buildDesktopTableRow(inst)).join('');
+      }
+
+      // 2. RENDERIZADO EN TARJETAS MÓVILES
+      const mobCards = document.getElementById('apksMobileCardsContainer');
+      if (filtered.length === 0) {
+        mobCards.innerHTML = `<div style="text-align:center; color:var(--muted); padding:20px; background:var(--bg); border:1px dashed var(--border); border-radius:12px; font-size:13px;">No se encontraron negocios registrados.</div>`;
+      } else {
+        mobCards.innerHTML = filtered.map((inst) => buildMobileCard(inst)).join('');
+      }
+    }
+
+    function buildDesktopTableRow(inst) {
+      const diffDays = inst.expiresAt
+        ? Math.ceil((new Date(inst.expiresAt).getTime() - Date.now()) / 86400000)
+        : 0;
+      const lastPay = inst.pendingPayment || (inst.payments && inst.payments[0]) || null;
+      const refText = lastPay ? `#${lastPay.refDigits} (Bs. ${Number(lastPay.amountBs || 0).toFixed(2)})` : '-';
+      const pinText = lastPay ? generateUnlockPinClient(inst.licenseId, lastPay.refDigits) : '-';
+
+      let statusBadgeClass = 'trial';
+      let statusLabel = '🎁 Prueba 7d';
+      if (inst.status === 'active') { statusBadgeClass = 'active'; statusLabel = '💎 Activa ($20)'; }
+      if (inst.status === 'pending_validation' || inst.pendingPayment) { statusBadgeClass = 'pending_validation'; statusLabel = '⏳ Por Validar'; }
+      if (inst.status === 'expired' || diffDays <= 0) { statusBadgeClass = 'expired'; statusLabel = '⚠️ Vencida'; }
+      if (inst.status === 'suspended') { statusBadgeClass = 'suspended'; statusLabel = '🚫 Suspendida'; }
+
+      const stats = inst.stats || {};
+      const prodCount = typeof stats.products === 'number' ? stats.products : 0;
+      const salesCount = typeof stats.sales === 'number' ? stats.sales : 0;
+      const backupTimeStr = inst.lastBackupAt ? new Date(inst.lastBackupAt).toLocaleString('es-VE', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+      const backupCell = backupTimeStr
+        ? `<strong>☁️ ${backupTimeStr}</strong><br><small style="color:var(--muted);">${prodCount} prods, ${salesCount} vtas</small>`
+        : `<span style="color:var(--muted); font-size:11.5px;">Sin respaldo</span>`;
+
+      const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
+      const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+
+      const sLicenseId = escapeHtml(inst.licenseId);
+      const sBrandName = escapeHtml(inst.brandName || 'PostFlow Negocio');
+      const sBrandPhone = escapeHtml(inst.brandPhone || '-');
+      const sRefText = escapeHtml(refText);
+      const sPinText = escapeHtml(pinText);
+
+      return `
+        <tr>
+          <td><strong style="color:#38bdf8; font-family:monospace;">${sLicenseId}</strong></td>
+          <td><strong>🏬 ${sBrandName}</strong></td>
+          <td>${sBrandPhone}</td>
+          <td><span class="badge ${statusBadgeClass}">${statusLabel}</span></td>
+          <td>
+            <strong>${diffDays > 0 ? `${diffDays} día(s)` : '0 días (Vencido)'}</strong><br>
+            <small style="color:var(--muted);">${inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString('es-VE') : '-'}</small>
+          </td>
+          <td>${sRefText}</td>
+          <td><span class="pin-pill">${sPinText}</span></td>
+          <td>${backupCell}</td>
+          <td>
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="openBusinessDetailsModal('${sLicenseId}')" title="Ver ficha técnica completa">
+                🔍 Ficha
+              </button>
+              <button class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${sLicenseId}')" title="Activar 30 días">
+                ✅ +30d
+              </button>
+              ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm" title="Abrir WhatsApp">💬 WA</a>` : ''}
+              <button class="btn btn-outline btn-sm" onclick="downloadBackupJsonAdmin('${sLicenseId}', '${sBrandName}')" title="Descargar JSON">
+                💾 JSON
+              </button>
+              <button class="btn btn-warning btn-sm" onclick="adminAction('suspend', '${sLicenseId}')" title="Suspender / Desbloquear">
+                ${inst.status === 'suspended' ? '🔓 Desbloquear' : '🚫 Bloquear'}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function buildMobileCard(inst) {
+      const diffDays = inst.expiresAt
+        ? Math.ceil((new Date(inst.expiresAt).getTime() - Date.now()) / 86400000)
+        : 0;
+      const lastPay = inst.pendingPayment || (inst.payments && inst.payments[0]) || null;
+      const refText = lastPay ? `#${lastPay.refDigits}` : '-';
+      const pinText = lastPay ? generateUnlockPinClient(inst.licenseId, lastPay.refDigits) : '-';
+
+      let statusBadgeClass = 'trial';
+      let statusLabel = '🎁 Prueba 7d';
+      if (inst.status === 'active') { statusBadgeClass = 'active'; statusLabel = '💎 Activa ($20)'; }
+      if (inst.status === 'pending_validation' || inst.pendingPayment) { statusBadgeClass = 'pending_validation'; statusLabel = '⏳ Por Validar'; }
+      if (inst.status === 'expired' || diffDays <= 0) { statusBadgeClass = 'expired'; statusLabel = '⚠️ Vencida'; }
+      if (inst.status === 'suspended') { statusBadgeClass = 'suspended'; statusLabel = '🚫 Suspendida'; }
+
+      const stats = inst.stats || {};
+      const prodCount = typeof stats.products === 'number' ? stats.products : 0;
+      const salesCount = typeof stats.sales === 'number' ? stats.sales : 0;
+
+      const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
+      const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+
+      const sLicenseId = escapeHtml(inst.licenseId);
+      const sBrandName = escapeHtml(inst.brandName || 'PostFlow Negocio');
+      const sBrandPhone = escapeHtml(inst.brandPhone || 'Sin teléfono');
+
+      return `
+        <div class="mob-card">
+          <div class="mob-card-head">
+            <div>
+              <div class="mob-card-brand-title">
+                🏬 ${sBrandName}
+              </div>
+              <span class="mob-card-id">${sLicenseId}</span>
+              <span style="font-size:11.5px; color:var(--muted); margin-left:6px;">📱 ${sBrandPhone}</span>
+            </div>
+            <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+          </div>
+
+          <div class="mob-card-grid">
+            <div class="mob-card-grid-item">
+              <span>Vencimiento:</span>
+              <strong>${diffDays > 0 ? `${diffDays} día(s)` : '0d (Vencido)'}</strong>
+            </div>
+            <div class="mob-card-grid-item">
+              <span>Nube / Ventas:</span>
+              <strong>${prodCount} prods, ${salesCount} vtas</strong>
+            </div>
+            <div class="mob-card-grid-item">
+              <span>Última Ref:</span>
+              <strong>${escapeHtml(refText)}</strong>
+            </div>
+            <div class="mob-card-grid-item">
+              <span>PIN Maestro:</span>
+              <span class="pin-pill" style="padding:1px 6px; font-size:11.5px;">${escapeHtml(pinText)}</span>
+            </div>
+          </div>
+
+          <div class="mob-card-actions">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openBusinessDetailsModal('${sLicenseId}')">
+              🔍 Ver Ficha
+            </button>
+            <button type="button" class="btn btn-success btn-sm" onclick="adminAction('approve_payment', '${sLicenseId}')">
+              ✅ +30d
+            </button>
+            ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm">💬 WhatsApp</a>` : ''}
+            <button type="button" class="btn btn-outline btn-sm" onclick="downloadBackupJsonAdmin('${sLicenseId}', '${sBrandName}')">
+              💾 JSON
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPaymentsAuditTable(payments) {
+      const tbody = document.getElementById('paymentsAuditTableBody');
+      if (!tbody) return;
+
+      if (payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--muted); padding:20px;">No hay pagos validados en el historial.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = payments.map((p) => {
+        const dateStr = p.approvedAt
+          ? new Date(p.approvedAt).toLocaleString('es-VE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : (p.reportedAt ? new Date(p.reportedAt).toLocaleString('es-VE') : 'Reciente');
+        const sBrand = escapeHtml(p.brandName || 'Negocio');
+        const sLicense = escapeHtml(p.licenseId || '-');
+        const sRef = escapeHtml(p.refDigits || '----');
+        const sBank = escapeHtml(p.bankName || 'Pago Móvil');
+        const sPhone = escapeHtml(p.payerPhone || p.phone || '-');
+        const sRate = p.rateEurBcv ? `${escapeHtml(p.rateEurBcv)} Bs/€` : 'Oficial';
+
+        return `
+          <tr>
+            <td><strong>${dateStr}</strong></td>
+            <td><strong>🏬 ${sBrand}</strong></td>
+            <td><span class="mob-card-id">${sLicense}</span></td>
+            <td><span class="ref-pill">#${sRef}</span></td>
+            <td>${sBank}</td>
+            <td><strong style="color:#34d399;">Bs. ${Number(p.amountBs || 0).toFixed(2)}</strong></td>
+            <td>${sRate}</td>
+            <td>${sPhone}</td>
+            <td><span class="badge active">✅ APROBADO ($20)</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // GESTIÓN DEL MODAL DE DETALLES DEL NEGOCIO
+    function openBusinessDetailsModal(licenseId) {
+      const inst = cachedInstallationsMap[licenseId];
+      if (!inst) {
+        alert('No se encontraron datos para la licencia ' + licenseId);
+        return;
+      }
+      currentDetailInstId = licenseId;
+
+      const modal = document.getElementById('modalBusinessDetails');
+      const b = cachedBackupsMap[licenseId] || {};
+      const backupData = b.data || {};
+      const stats = inst.stats || {};
+
+      document.getElementById('modalDetBrandName').textContent = inst.brandName || 'PostFlow Negocio';
+      document.getElementById('modalDetLicenseIdPill').textContent = inst.licenseId;
+
+      // Estado y días
+      const diffDays = inst.expiresAt
+        ? Math.ceil((new Date(inst.expiresAt).getTime() - Date.now()) / 86400000)
+        : 0;
+
+      let badgeHtml = '<span class="badge trial">🎁 En Prueba (7 Días)</span>';
+      if (inst.status === 'active') badgeHtml = '<span class="badge active">💎 Membresía Activa ($20)</span>';
+      if (inst.status === 'pending_validation' || inst.pendingPayment) badgeHtml = '<span class="badge pending_validation">⏳ Pago Pendiente por Validar</span>';
+      if (inst.status === 'expired' || diffDays <= 0) badgeHtml = '<span class="badge expired">⚠️ Membresía Vencida</span>';
+      if (inst.status === 'suspended') badgeHtml = '<span class="badge suspended">🚫 APK Suspendida</span>';
+      document.getElementById('modalDetStatusBadge').innerHTML = badgeHtml;
+
+      const expDateStr = inst.expiresAt ? new Date(inst.expiresAt).toLocaleDateString('es-VE') : 'No definida';
+      document.getElementById('modalDetExpirationText').textContent = diffDays > 0
+        ? `${diffDays} día(s) restantes (${expDateStr})`
+        : `Vencida (${expDateStr})`;
+
+      // Contacto y PIN
+      const phone = inst.brandPhone || 'No registrado';
+      document.getElementById('modalDetPhone').textContent = phone;
+
+      const lastPay = inst.pendingPayment || (inst.payments && inst.payments[0]);
+      const currentPin = lastPay ? generateUnlockPinClient(inst.licenseId, lastPay.refDigits) : generateUnlockPinClient(inst.licenseId, '0000');
+      document.getElementById('modalDetMasterPin').textContent = currentPin;
+
+      const cleanPhone = (inst.brandPhone || '').replace(/[^0-9]/g, '');
+      const btnWa = document.getElementById('modalDetBtnWaChat');
+      const btnRec = document.getElementById('modalDetBtnSendRecovery');
+      if (cleanPhone) {
+        btnWa.href = `https://wa.me/${cleanPhone}`;
+        btnWa.style.display = 'inline-flex';
+        const recMsg = encodeURIComponent(
+          `Hola *${inst.brandName}*, para acceder a tu sistema PostFlow ingresa a https://reposteria-sistema-pos.web.app con tu ID de instalación: *${inst.licenseId}*. Tu PIN de desbloqueo es: *${currentPin}*.`
+        );
+        btnRec.href = `https://wa.me/${cleanPhone}?text=${recMsg}`;
+        btnRec.style.display = 'inline-flex';
+      } else {
+        btnWa.style.display = 'none';
+        btnRec.style.display = 'none';
+      }
+
+      // Métricas y Nube
+      const prodCount = typeof stats.products === 'number' ? stats.products : ((backupData.products || []).length);
+      const salesCount = typeof stats.sales === 'number' ? stats.sales : ((backupData.sales || []).length);
+      const custCount = typeof stats.customers === 'number' ? stats.customers : ((backupData.customers || []).length);
+      const usersCount = (backupData.users || []).length || 1;
+
+      document.getElementById('modalDetStatProds').textContent = prodCount;
+      document.getElementById('modalDetStatSales').textContent = salesCount;
+      document.getElementById('modalDetStatCustomers').textContent = custCount;
+      document.getElementById('modalDetStatUsers').textContent = usersCount;
+
+      const bTime = inst.lastBackupAt || b.updatedAt;
+      document.getElementById('modalDetLastBackupTime').textContent = bTime
+        ? `Último respaldo: ${new Date(bTime).toLocaleString('es-VE')}`
+        : 'Sin respaldo en la nube aún';
+
+      // Historial de Pagos
+      const payListEl = document.getElementById('modalDetPaymentsList');
+      const allPays = [...(inst.payments || [])];
+      if (inst.pendingPayment) {
+        allPays.unshift({ ...inst.pendingPayment, isPending: true });
+      }
+
+      if (allPays.length === 0) {
+        payListEl.innerHTML = `<span style="color:var(--muted); font-size:12px;">No hay pagos registrados para este negocio.</span>`;
+      } else {
+        payListEl.innerHTML = allPays.map((p) => {
+          const dt = p.approvedAt || p.reportedAt ? new Date(p.approvedAt || p.reportedAt).toLocaleDateString('es-VE') : 'Fecha no disp.';
+          const st = p.isPending ? '<span class="badge pending_validation">Pendiente</span>' : '<span class="badge active">Aprobado</span>';
+          return `
+            <div style="background:#1e293b; padding:8px 10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <div>
+                <strong>Ref #${escapeHtml(p.refDigits || '----')}</strong> · ${escapeHtml(p.bankName || 'Pago Móvil')}
+                <small style="color:var(--muted); display:block;">${dt} · Pagador: ${escapeHtml(p.payerPhone || phone)}</small>
+              </div>
+              <div style="text-align:right;">
+                <strong style="color:#34d399;">Bs. ${Number(p.amountBs || 0).toFixed(2)}</strong>
+                <div>${st}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Eventos de botones de control dentro del modal
+      document.getElementById('modalDetBtnDownloadJson').onclick = () => downloadBackupJsonAdmin(inst.licenseId, inst.brandName);
+      document.getElementById('modalDetBtnApprove30').onclick = () => {
+        adminAction('approve_payment', inst.licenseId);
+        closeBusinessDetailsModal();
+      };
+      document.getElementById('modalDetBtnGrant7').onclick = () => {
+        adminAction('grant_days', inst.licenseId, 7);
+        closeBusinessDetailsModal();
+      };
+      document.getElementById('modalDetBtnGrant90').onclick = () => {
+        adminAction('grant_days', inst.licenseId, 90);
+        closeBusinessDetailsModal();
+      };
+      document.getElementById('modalDetBtnSuspend').onclick = () => {
+        adminAction('suspend', inst.licenseId);
+        closeBusinessDetailsModal();
+      };
+      document.getElementById('modalDetBtnDelete').onclick = () => {
+        adminAction('delete', inst.licenseId);
+        closeBusinessDetailsModal();
+      };
+
+      modal.style.display = 'flex';
+    }
+
+    function closeBusinessDetailsModal() {
+      const modal = document.getElementById('modalBusinessDetails');
+      if (modal) modal.style.display = 'none';
+      currentDetailInstId = null;
+    }
+
+    // ACCIONES ADMINISTRATIVAS EN FIREBASE Y LOCAL
     async function adminAction(action, licenseId, days = 7) {
-      if (action === 'delete' && !confirm(`¿Eliminar el registro de la APK ${licenseId}?`)) return;
+      if (action === 'delete' && !confirm(`¿Eliminar definitivamente el registro de la APK ${licenseId}?`)) return;
 
       const inst = cachedInstallationsMap[licenseId] || { licenseId, payments: [] };
 
-      // 1. Ejecutar acción en Firebase Realtime Database (Nube 24/7)
+      // 1. Firebase RTDB
       if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
         try {
           if (action === 'approve_payment') {
@@ -1011,25 +1862,28 @@
             });
             showAdminToast(`❌ Pago rechazado para ${inst.brandName || licenseId}`);
           } else if (action === 'grant_days') {
-            const newExp = new Date(Date.now() + Number(days || 7) * 86400000).toISOString();
+            const currentExp = (inst.expiresAt && new Date(inst.expiresAt).getTime() > Date.now())
+              ? new Date(inst.expiresAt).getTime()
+              : Date.now();
+            const newExp = new Date(currentExp + Number(days) * 86400000).toISOString();
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                status: 'trial',
+                status: days >= 30 ? 'active' : 'trial',
                 expiresAt: newExp
               })
             });
-            showAdminToast(`🎁 +${days} días de prueba otorgados a ${inst.brandName || licenseId}`);
+            playSuccessChime();
+            showAdminToast(`🎁 +${days} días otorgados a ${inst.brandName || licenseId}`);
           } else if (action === 'suspend') {
+            const newStatus = inst.status === 'suspended' ? 'active' : 'suspended';
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: 'suspended'
-              })
+              body: JSON.stringify({ status: newStatus })
             });
-            showAdminToast(`🚫 APK ${licenseId} suspendida`);
+            showAdminToast(newStatus === 'suspended' ? `🚫 APK ${licenseId} suspendida` : `🔓 APK ${licenseId} reactivada`);
           } else if (action === 'delete') {
             await fetch(`${FIREBASE_RTDB_URL}/installations/${licenseId}.json`, {
               method: 'DELETE'
@@ -1041,7 +1895,7 @@
         }
       }
 
-      // 2. Ejecutar también en servidor local si está activo
+      // 2. Servidor local si está disponible
       try {
         await fetch('/api/admin/action', {
           method: 'POST',
@@ -1053,7 +1907,44 @@
       loadAdminData();
     }
 
-    document.getElementById('chkRequireManualApproval').addEventListener('change', async (e) => {
+    async function downloadBackupJsonAdmin(licenseId, brandName) {
+      if (!FIREBASE_RTDB_URL) return;
+      try {
+        const res = await fetch(`${FIREBASE_RTDB_URL}/backups/${licenseId}.json`);
+        if (!res.ok) throw new Error('Error de red al consultar respaldo');
+        const data = await res.json();
+        if (!data || !data.data) {
+          alert(`El negocio ${brandName} (${licenseId}) aún no ha realizado su primer respaldo en la nube.`);
+          return;
+        }
+        const str = JSON.stringify(data.data, null, 2);
+        const blob = new Blob([str], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Respaldo_${brandName.replace(/[^a-zA-Z0-9]/g, '_')}_${licenseId}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (err) {
+        alert('Error al descargar respaldo: ' + (err.message || err));
+      }
+    }
+
+    // GESTIÓN DE FILTROS Y BÚSQUEDA
+    document.getElementById('adminSearchInput')?.addEventListener('input', (e) => {
+      currentAdminSearch = e.target.value;
+      renderFilteredInstallations(Object.values(cachedInstallationsMap));
+    });
+
+    document.querySelectorAll('.filter-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach((c) => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentAdminFilter = chip.dataset.filter;
+        renderFilteredInstallations(Object.values(cachedInstallationsMap));
+      });
+    });
+
+    document.getElementById('chkRequireManualApproval')?.addEventListener('change', async (e) => {
       if (FIREBASE_RTDB_URL && FIREBASE_RTDB_URL.startsWith('https://')) {
         try {
           await fetch(`${FIREBASE_RTDB_URL}/config.json`, {
@@ -1076,29 +1967,7 @@
       loadAdminData();
     });
 
-    async function downloadBackupJsonAdmin(licenseId, brandName) {
-      if (!FIREBASE_RTDB_URL) return;
-      try {
-        const res = await fetch(`${FIREBASE_RTDB_URL}/backups/${licenseId}.json`);
-        if (!res.ok) throw new Error('Error de red al consultar respaldo');
-        const data = await res.json();
-        if (!data || !data.data) {
-          alert(`El negocio ${brandName} (${licenseId}) aún no ha realizado su primer respaldo en la nube.`);
-          return;
-        }
-        const str = JSON.stringify(data.data, null, 2);
-        const blob = new Blob([str], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Respaldo_${brandName.replace(/[^a-zA-Z0-9]/g, '_')}_${licenseId}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      } catch (err) {
-        alert('Error al descargar el respaldo: ' + (err.message || err));
-      }
-    }
-
-    // HASHES CRIPTOGRÁFICOS SHA-256 DE AUTENTICACIÓN (NUNCA EN TEXTO PLANO)
+    // HASHES CRIPTOGRÁFICOS SHA-256 DE AUTENTICACIÓN
     const MASTER_HASHES = [
       'a9683a10ce404f3e467f7ad226fe50d1b8c6f56d78ac298d61405d76629ff0a4', // PIN 26862189
       '6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6'  // PIN admin2026
@@ -1187,7 +2056,7 @@
       checkAdminAuth();
     });
 
-    document.getElementById('btnRefreshAdmin').addEventListener('click', () => {
+    document.getElementById('btnRefreshAdmin')?.addEventListener('click', () => {
       loadAdminData();
       showAdminToast('🔄 Datos actualizados');
     });
@@ -1200,12 +2069,11 @@
     document.getElementById('btnToggleNotifications')?.addEventListener('click', toggleNotificationPermission);
 
     // ==========================================
-    // GESTIÓN DEL BOT DE WHATSAPP PARA EL ADMINISTRADOR
+    // BOT DE WHATSAPP PARA EL ADMINISTRADOR
     // ==========================================
     let waModalTimer = null;
 
     async function loadAdminWaConfig() {
-      // 1. Intentar cargar desde Firebase RTDB
       if (FIREBASE_RTDB_URL) {
         try {
           const res = await fetch(`${FIREBASE_RTDB_URL}/config/adminWhatsapp.json`);
@@ -1221,7 +2089,6 @@
         } catch (_) {}
       }
 
-      // 2. Cargar estado de la conexión desde el servidor local si está accesible
       try {
         const res = await fetch('/api/wa/status');
         if (res.ok) {
@@ -1277,7 +2144,7 @@
         if (qrImg) qrImg.src = data.qrDataUrl;
         if (btnLogout) btnLogout.style.display = 'none';
       } else {
-        badge.textContent = '🔴 DESCONECTADO / INICIANDO';
+        badge.textContent = '🔴 DESCONECTADO';
         badge.style.background = 'rgba(239, 68, 68, 0.2)';
         badge.style.color = '#f87171';
         if (connInfo) connInfo.style.display = 'none';
@@ -1311,7 +2178,6 @@
       const phone = document.getElementById('adminWaRecipientPhone').value.trim();
       const notifyOnPayment = document.getElementById('chkAdminNotifyOnPayment').checked;
 
-      // 1. Guardar en Firebase RTDB
       if (FIREBASE_RTDB_URL) {
         try {
           await fetch(`${FIREBASE_RTDB_URL}/config/adminWhatsapp.json`, {
@@ -1322,7 +2188,6 @@
         } catch (_) {}
       }
 
-      // 2. Guardar en servidor local si está disponible
       try {
         await fetch('/api/admin/whatsapp-config', {
           method: 'POST',
@@ -1377,6 +2242,7 @@
       }
     });
 
+    // INICIAR
     checkAdminAuth();
     setInterval(() => {
       if (sessionStorage.getItem('postflow_admin_auth') === 'granted') {
